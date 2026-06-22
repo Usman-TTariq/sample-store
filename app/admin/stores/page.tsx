@@ -34,6 +34,8 @@ export default function StoresPage() {
     merchantId: '',
     networkId: '',
     trackingLink: '',
+    websiteUrl: '',
+    voucherText: '',
     country: 'US',
   });
   const [slugError, setSlugError] = useState<string>('');
@@ -552,6 +554,10 @@ export default function StoresPage() {
       slug: formData.slug || '',
       description: formData.description || '',
       logoUrl: logoUrlToSave,
+      websiteUrl: formData.websiteUrl || (storeUrl.trim()
+        ? (storeUrl.trim().startsWith('http') ? storeUrl.trim() : `https://${storeUrl.trim()}`)
+        : undefined),
+      voucherText: formData.voucherText || undefined,
       seoTitle: formData.seoTitle || undefined,
       seoDescription: formData.seoDescription || undefined,
       isTrending: formData.isTrending || false,
@@ -561,6 +567,7 @@ export default function StoresPage() {
       networkId: formData.networkId || undefined,
       trackingLink: formData.trackingLink || undefined,
       country: formData.country || 'US',
+      status: 'active',
     };
 
     const result = await createStore(storeData);
@@ -582,6 +589,8 @@ export default function StoresPage() {
         merchantId: '',
         networkId: '',
         trackingLink: '',
+        websiteUrl: '',
+        voucherText: '',
         country: 'US',
       });
       setSlugError('');
@@ -594,6 +603,11 @@ export default function StoresPage() {
       setUploadingToCloudinary(false);
       setLogoUploadMethod('file');
       setFileInputKey(prev => prev + 1);
+      alert('Store created successfully! Check homepage after refresh.');
+    } else {
+      const msg = result.error?.message || 'Failed to create store';
+      alert(`Error: ${msg}`);
+      console.error('Store creation failed:', result.error);
     }
   };
 
@@ -731,6 +745,7 @@ export default function StoresPage() {
         setFormData({
           name: data.name || formData.name || '',
           description: data.description || formData.description || '',
+          websiteUrl: storeUrl.trim().startsWith('http') ? storeUrl.trim() : `https://${storeUrl.trim()}`,
           isTrending: formData.isTrending || false,
           layoutPosition: formData.layoutPosition || null,
         });
@@ -1069,6 +1084,43 @@ export default function StoresPage() {
               <p className="mt-1 text-xs text-gray-500">
                 Affiliate tracking URL for this store
               </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="websiteUrl" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Website URL
+                </label>
+                <input
+                  id="websiteUrl"
+                  name="websiteUrl"
+                  type="url"
+                  placeholder="https://www.nike.com"
+                  value={formData.websiteUrl || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, websiteUrl: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">Used for store logo &amp; homepage cards</p>
+              </div>
+              <div>
+                <label htmlFor="voucherText" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Deal Text (homepage)
+                </label>
+                <input
+                  id="voucherText"
+                  name="voucherText"
+                  type="text"
+                  placeholder="e.g. 25% Off Sitewide"
+                  value={formData.voucherText || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, voucherText: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">Shows on Featured &amp; Trending sections</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

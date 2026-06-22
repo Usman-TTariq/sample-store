@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { siteConfig } from '@/lib/seo/config';
 import CategoryPageClient from './CategoryPageClient';
 
 type Props = { params: Promise<{ id: string }> };
@@ -10,9 +11,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = category?.name ? `${category.name} Coupons & Deals` : 'Category';
   const description = category?.name
-    ? `Browse the best ${category.name} coupons and discount codes on COUPACHU. Save on top brands in ${category.name}.`
-    : 'Browse coupons by category on COUPACHU.';
-  const canonical = `https://coupachu.com/categories/${id}`;
+    ? `Browse the best ${category.name} coupons and discount codes on ${siteConfig.name}. Save on top brands in ${category.name}.`
+    : `Browse coupons by category on ${siteConfig.name}.`;
+  const canonical = `${siteConfig.url}/categories/${id}`;
 
   return {
     title,

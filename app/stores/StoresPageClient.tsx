@@ -271,7 +271,7 @@ export default function StoresPage() {
             </div>
           </div>
         ) : (
-          <div className="w-full aspect-[1728/547] min-h-[200px] sm:min-h-[250px] bg-gradient-to-r from-green-50 to-emerald-50"></div>
+          <div className="w-full aspect-[1728/547] min-h-[200px] sm:min-h-[250px] bg-[#FFFBF0]"></div>
         )}
       </div>
 
@@ -286,19 +286,19 @@ export default function StoresPage() {
       <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-12 lg:py-16 bg-white overflow-x-hidden">
         <div className="max-w-7xl mx-auto w-full">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4 sm:mb-6 md:mb-8">
-            All <span className="text-orange-600">Stores</span>
+            All <span className="text-[#B8860B]">Stores</span>
           </h2>
 
           {/* Filter and Sort Bar */}
-          <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8 pb-3 sm:pb-4 border-b border-green-100">
+          <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8 pb-3 sm:pb-4 border-b border-[#FFD23F]/40">
             <div className="text-xs sm:text-sm md:text-base text-gray-600 text-center sm:text-left">
-              Showing <span className="font-semibold text-[#0B453C]">{newStores.length}</span> of <span className="font-semibold text-[#0B453C]">{allStores.length}</span> Results
+              Showing <span className="font-semibold text-[#B8860B]">{newStores.length}</span> of <span className="font-semibold text-[#B8860B]">{allStores.length}</span> Results
             </div>
 
             <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-2 xs:gap-3 sm:gap-4 w-full">
               <button
                 onClick={() => setShowFilter(!showFilter)}
-                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-green-200 text-[#0B453C] rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors text-xs sm:text-sm md:text-base font-medium w-full xs:w-auto"
+                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-[#FFD23F]/40 text-[#B8860B] rounded-lg hover:bg-[#FFFBF0] active:bg-[#FFFBF0] transition-colors text-xs sm:text-sm md:text-base font-medium w-full xs:w-auto"
               >
                 <Filter className="w-4 h-4" />
                 Filter
@@ -309,7 +309,7 @@ export default function StoresPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="flex-1 xs:flex-none px-2 sm:px-3 py-2 border border-green-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B453C] text-xs sm:text-sm md:text-base bg-white cursor-pointer"
+                  className="flex-1 xs:flex-none px-2 sm:px-3 py-2 border border-[#FFD23F]/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFD23F] text-xs sm:text-sm md:text-base bg-white cursor-pointer"
                 >
                   <option value="newest">Newest</option>
                   <option value="oldest">Oldest</option>
@@ -336,9 +336,9 @@ export default function StoresPage() {
               {filteredStores.length > 0 && (
                 <div className="mb-4 sm:mb-6 md:mb-12">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6 px-2 sm:px-0">
-                    Featured <span className="text-[#0B453C]">Stores</span>
+                    Featured <span className="text-[#B8860B]">Stores</span>
                   </h3>
-                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-50 via-white to-emerald-50 p-2 sm:p-3 md:p-4 lg:p-6 border border-green-100">
+                  <div className="relative overflow-hidden rounded-xl bg-[#FFFBF0] p-2 sm:p-3 md:p-4 lg:p-6 border border-[#FFD23F]/40">
                     <div
                       ref={sliderRef}
                       className="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 overflow-x-auto scrollbar-hide pb-2 pt-2 snap-x snap-mandatory"
@@ -349,7 +349,7 @@ export default function StoresPage() {
                         <Link
                           key={`${store.id}-${index}`}
                           href={`/stores/${store.slug || store.id}`}
-                          className="group flex flex-col flex-shrink-0 w-[140px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] bg-white rounded-xl sm:rounded-2xl border border-gray-100 hover:border-[#0B453C] active:border-[#0B453C] transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 sm:hover:-translate-y-1 sm:hover:scale-[1.02] relative snap-start"
+                          className="group flex flex-col flex-shrink-0 w-[140px] xs:w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] bg-white rounded-xl sm:rounded-2xl border border-gray-200 hover:border-[#E6BC2E] active:border-[#E6BC2E] transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 sm:hover:-translate-y-1 sm:hover:scale-[1.02] relative snap-start"
                           style={{
                             animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                           }}
@@ -372,7 +372,7 @@ export default function StoresPage() {
                                     target.style.display = 'none';
                                     const parent = target.parentElement;
                                     if (parent) {
-                                      parent.innerHTML = `<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white text-lg sm:text-2xl font-bold shadow-lg">${store.name.charAt(0).toUpperCase()}</div>`;
+                                      parent.innerHTML = `<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#FFD23F] to-[#FFE566] flex items-center justify-center text-black text-lg sm:text-2xl font-bold shadow-lg">${store.name.charAt(0).toUpperCase()}</div>`;
                                     }
                                   }
                                 }}
@@ -381,13 +381,13 @@ export default function StoresPage() {
                           </div>
 
                           {/* Content Section - Footer */}
-                          <div className="px-2 py-1.5 sm:px-3 md:px-4 sm:py-2 border-t border-gray-100 bg-white relative z-20 mt-auto">
-                            <h3 className="font-bold text-xs sm:text-sm md:text-base text-gray-900 text-center break-words group-hover:text-[#0B453C] transition-colors duration-300 mb-1 line-clamp-2">
+                          <div className="px-2 py-1.5 sm:px-3 md:px-4 sm:py-2 border-t border-gray-200 bg-white relative z-20 mt-auto">
+                            <h3 className="font-bold text-xs sm:text-sm md:text-base text-gray-900 text-center break-words group-hover:text-[#E6BC2E] transition-colors duration-300 mb-1 line-clamp-2">
                               {store.name}
                             </h3>
                             {store.voucherText && (
                               <div className="flex justify-center mt-1">
-                                <span className="inline-block bg-gradient-to-r from-[#0B453C] to-emerald-600 text-white text-[10px] xs:text-xs font-bold px-2 xs:px-3 py-1 xs:py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300 line-clamp-1">
+                                <span className="inline-block bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black text-[10px] xs:text-xs font-bold px-2 xs:px-3 py-1 xs:py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300 line-clamp-1">
                                   {store.voucherText}
                                 </span>
                               </div>
@@ -407,7 +407,7 @@ export default function StoresPage() {
               {filteredStores.length > 0 && (
                 <div className="mb-4 sm:mb-0">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6 px-2 sm:px-0">
-                    All <span className="text-[#0B453C]">Stores</span>
+                    All <span className="text-[#B8860B]">Stores</span>
                   </h3>
 
                   {/* Mobile: Horizontal Scroll */}
@@ -421,7 +421,7 @@ export default function StoresPage() {
                             <Link
                               key={store.id}
                               href={`/stores/${store.slug || store.id}`}
-                              className="group flex flex-col bg-white rounded-xl sm:rounded-2xl border border-gray-100 hover:border-[#0B453C] active:border-[#0B453C] transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 relative flex-shrink-0 w-[140px] xs:w-[160px] snap-start"
+                              className="group flex flex-col bg-white rounded-xl sm:rounded-2xl border border-gray-200 hover:border-[#E6BC2E] active:border-[#E6BC2E] transition-all duration-300 shadow-md hover:shadow-xl active:shadow-lg overflow-hidden cursor-pointer transform active:scale-95 relative flex-shrink-0 w-[140px] xs:w-[160px] snap-start"
                             >
                               {/* Logo Section */}
                               <div className="aspect-[4/3] px-4 pt-3 pb-1.5 flex flex-col items-center justify-center relative bg-gradient-to-br from-gray-50 via-white to-gray-50 transition-all duration-500 flex-shrink-0">
@@ -442,20 +442,20 @@ export default function StoresPage() {
                                     />
                                   </div>
                                 ) : (
-                                  <div className="text-gray-400 text-xs text-center font-semibold group-hover:text-orange-600 transition-colors">
+                                  <div className="text-gray-400 text-xs text-center font-semibold group-hover:text-[#E6BC2E] transition-colors">
                                     {store.name}
                                   </div>
                                 )}
                               </div>
 
                               {/* Content Section - Footer */}
-                              <div className="px-2 py-1.5 sm:px-3 border-t border-gray-100 bg-white relative z-20 mt-auto">
-                                <h3 className="font-bold text-[11px] xs:text-xs text-gray-900 text-center break-words group-hover:text-[#0B453C] transition-colors duration-300 mb-1 line-clamp-2">
+                              <div className="px-2 py-1.5 sm:px-3 border-t border-gray-200 bg-white relative z-20 mt-auto">
+                                <h3 className="font-bold text-[11px] xs:text-xs text-gray-900 text-center break-words group-hover:text-[#E6BC2E] transition-colors duration-300 mb-1 line-clamp-2">
                                   {store.name}
                                 </h3>
                                 {store.voucherText && (
                                   <div className="flex justify-center mt-1">
-                                    <span className="inline-block bg-gradient-to-r from-[#0B453C] to-emerald-600 text-white text-[9px] xs:text-[10px] font-bold px-1.5 xs:px-2 py-0.5 xs:py-1 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300 line-clamp-1">
+                                    <span className="inline-block bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black text-[9px] xs:text-[10px] font-bold px-1.5 xs:px-2 py-0.5 xs:py-1 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300 line-clamp-1">
                                       {store.voucherText}
                                     </span>
                                   </div>
@@ -477,7 +477,7 @@ export default function StoresPage() {
                       <Link
                         key={store.id}
                         href={`/stores/${store.slug || store.id}`}
-                        className="group flex flex-col bg-white rounded-2xl border border-gray-100 hover:border-[#0B453C] transition-all duration-500 shadow-md hover:shadow-2xl overflow-hidden cursor-pointer transform hover:-translate-y-2 hover:scale-105 relative"
+                        className="group flex flex-col bg-white rounded-2xl border border-gray-200 hover:border-[#E6BC2E] transition-all duration-500 shadow-md hover:shadow-2xl overflow-hidden cursor-pointer transform hover:-translate-y-2 hover:scale-105 relative"
                         style={{
                           animation: `fadeInUp 0.6s ease-out ${(index % 12) * 0.05}s both`
                         }}
@@ -500,7 +500,7 @@ export default function StoresPage() {
                                   target.style.display = 'none';
                                   const parent = target.parentElement;
                                   if (parent) {
-                                    parent.innerHTML = `<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white text-lg sm:text-2xl font-bold shadow-lg">${store.name.charAt(0).toUpperCase()}</div>`;
+                                    parent.innerHTML = `<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#FFD23F] to-[#FFE566] flex items-center justify-center text-black text-lg sm:text-2xl font-bold shadow-lg">${store.name.charAt(0).toUpperCase()}</div>`;
                                   }
                                 }
                               }}
@@ -509,13 +509,13 @@ export default function StoresPage() {
                         </div>
 
                         {/* Content Section - Footer */}
-                        <div className="px-3 py-1.5 sm:px-4 sm:py-2 border-t border-gray-100 bg-white relative z-20 mt-auto">
-                          <h3 className="font-bold text-sm sm:text-base text-gray-900 text-center break-words group-hover:text-[#0B453C] transition-colors duration-300 mb-1">
+                        <div className="px-3 py-1.5 sm:px-4 sm:py-2 border-t border-gray-200 bg-white relative z-20 mt-auto">
+                          <h3 className="font-bold text-sm sm:text-base text-gray-900 text-center break-words group-hover:text-[#E6BC2E] transition-colors duration-300 mb-1">
                             {store.name}
                           </h3>
                           {store.voucherText && (
                             <div className="flex justify-center mt-1">
-                              <span className="inline-block bg-gradient-to-r from-[#0B453C] to-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300">
+                              <span className="inline-block bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black text-xs font-bold px-3 py-1.5 rounded-full shadow-lg group-hover:shadow-xl transform group-hover:scale-110 transition-all duration-300">
                                 {store.voucherText}
                               </span>
                             </div>
@@ -549,7 +549,7 @@ export default function StoresPage() {
               disabled={currentPage === 1}
               className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${currentPage === 1
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                : 'bg-gradient-to-r from-[#0B453C] to-emerald-600 text-white hover:shadow-lg hover:scale-105'
+                : 'bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black hover:from-black hover:to-black hover:text-white hover:shadow-lg hover:scale-105'
                 }`}
             >
               Previous
@@ -584,8 +584,8 @@ export default function StoresPage() {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${currentPage === page
-                      ? 'bg-gradient-to-r from-[#0B453C] to-emerald-600 text-white shadow-lg scale-110'
-                      : 'bg-white text-gray-700 hover:bg-green-50 border border-green-100'
+                      ? 'bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black shadow-lg scale-110'
+                      : 'bg-white text-gray-700 hover:bg-[#FFFBF0] border border-[#FFD23F]/40'
                       }`}
                   >
                     {page}
@@ -605,7 +605,7 @@ export default function StoresPage() {
               disabled={currentPage === totalPages}
               className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${currentPage === totalPages
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                : 'bg-gradient-to-r from-[#0B453C] to-emerald-600 text-white hover:shadow-lg hover:scale-105'
+                : 'bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black hover:from-black hover:to-black hover:text-white hover:shadow-lg hover:scale-105'
                 }`}
             >
               Next

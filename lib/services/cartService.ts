@@ -13,7 +13,7 @@ export interface CartItem {
   addedAt: number; // timestamp
 }
 
-const CART_KEY = 'coupachu_cart';
+const CART_KEY = 'sample_store_cart';
 
 // Get all cart items
 export function getCartItems(): CartItem[] {

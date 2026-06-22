@@ -1,13 +1,14 @@
+import { siteConfig } from '@/lib/seo/config';
 import CouponsPageClient from './CouponsPageClient';
 
 export const metadata = {
   title: 'Latest Coupons & Promo Codes',
-  description: 'Browse the latest verified coupons and promo codes on COUPACHU. Updated daily with fresh discounts from top brands.',
-  alternates: { canonical: 'https://coupachu.com/coupons' },
+  description: `Browse the latest verified coupons and promo codes on ${siteConfig.name}. Updated daily with fresh discounts from top brands.`,
+  alternates: { canonical: `${siteConfig.url}/coupons` },
   openGraph: {
     title: 'Latest Coupons & Promo Codes',
-    description: 'Browse the latest verified coupons and promo codes on COUPACHU. Updated daily with fresh discounts from top brands.',
-    url: 'https://coupachu.com/coupons',
+    description: `Browse the latest verified coupons and promo codes on ${siteConfig.name}. Updated daily with fresh discounts from top brands.`,
+    url: `${siteConfig.url}/coupons`,
   },
 };
 

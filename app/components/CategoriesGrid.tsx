@@ -73,7 +73,7 @@ export default function CategoriesGrid() {
               id="sortBy"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'newest' | 'name')}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#0B453C]"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#FFD23F]"
             >
               <option value="newest">Newest</option>
               <option value="name">Name</option>
@@ -82,7 +82,7 @@ export default function CategoriesGrid() {
         </div>
 
         {/* Categories Grid */}
-        <div className="bg-white rounded-lg p-4 sm:p-6 md:p-8 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-lg p-4 sm:p-6 md:p-8 shadow-sm border border-gray-200">
           {/* Mobile: Horizontal Scrollable with 3 Rows */}
           <div className="block sm:hidden">
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
@@ -103,7 +103,7 @@ export default function CategoriesGrid() {
                           <Link
                             key={category.id}
                             href={`/categories/${category.id}`}
-                            className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group"
+                            className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gradient-to-br hover:bg-white transition-all duration-300 group"
                           >
                             <div
                               className="w-12 h-12 rounded-full flex items-center justify-center shadow-md group-hover:shadow-xl transition-all duration-300 relative overflow-hidden group-hover:scale-110"
@@ -133,7 +133,7 @@ export default function CategoriesGrid() {
                                 </div>
                               )}
                             </div>
-                            <span className="text-xs font-semibold text-gray-800 group-hover:text-[#0B453C] transition-colors duration-300 lowercase text-center line-clamp-2">
+                            <span className="text-xs font-semibold text-gray-800 group-hover:text-[#E6BC2E] transition-colors duration-300 lowercase text-center line-clamp-2">
                               {category.name.toLowerCase()}
                             </span>
                           </Link>
@@ -146,7 +146,7 @@ export default function CategoriesGrid() {
                           <Link
                             key={category.id}
                             href={`/categories/${category.id}`}
-                            className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group"
+                            className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gradient-to-br hover:bg-white transition-all duration-300 group"
                           >
                             <div
                               className="w-12 h-12 rounded-full flex items-center justify-center shadow-md group-hover:shadow-xl transition-all duration-300 relative overflow-hidden group-hover:scale-110"
@@ -176,7 +176,7 @@ export default function CategoriesGrid() {
                                 </div>
                               )}
                             </div>
-                            <span className="text-xs font-semibold text-gray-800 group-hover:text-[#0B453C] transition-colors duration-300 lowercase text-center line-clamp-2">
+                            <span className="text-xs font-semibold text-gray-800 group-hover:text-[#E6BC2E] transition-colors duration-300 lowercase text-center line-clamp-2">
                               {category.name.toLowerCase()}
                             </span>
                           </Link>
@@ -189,7 +189,7 @@ export default function CategoriesGrid() {
                           <Link
                             key={category.id}
                             href={`/categories/${category.id}`}
-                            className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group"
+                            className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gradient-to-br hover:bg-white transition-all duration-300 group"
                           >
                             <div
                               className="w-12 h-12 rounded-full flex items-center justify-center shadow-md group-hover:shadow-xl transition-all duration-300 relative overflow-hidden group-hover:scale-110"
@@ -219,7 +219,7 @@ export default function CategoriesGrid() {
                                 </div>
                               )}
                             </div>
-                            <span className="text-xs font-semibold text-gray-800 group-hover:text-[#0B453C] transition-colors duration-300 lowercase text-center line-clamp-2">
+                            <span className="text-xs font-semibold text-gray-800 group-hover:text-[#E6BC2E] transition-colors duration-300 lowercase text-center line-clamp-2">
                               {category.name.toLowerCase()}
                             </span>
                           </Link>
@@ -238,7 +238,7 @@ export default function CategoriesGrid() {
               <Link
                 key={category.id}
                 href={`/categories/${category.id}`}
-                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group transform hover:scale-105 hover:shadow-lg"
+                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl hover:bg-gradient-to-r hover:bg-white transition-all duration-300 group transform hover:scale-105 hover:shadow-lg"
               >
                 <div
                   className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 rounded-full flex items-center justify-center shadow-md group-hover:shadow-xl transition-all duration-300 relative overflow-hidden group-hover:scale-110"
@@ -284,7 +284,7 @@ export default function CategoriesGrid() {
                     </div>
                   )}
                 </div>
-                <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-[#0B453C] transition-all duration-300 lowercase flex-1 group-hover:translate-x-1">
+                <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-[#E6BC2E] transition-all duration-300 lowercase flex-1 group-hover:translate-x-1">
                   {category.name.toLowerCase()}
                 </span>
                 {/* Arrow icon on hover */}

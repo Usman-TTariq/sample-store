@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -191,7 +191,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#0B453C] mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFD23F] mb-4"></div>
             <p className="text-gray-600">Loading store...</p>
           </div>
         </div>
@@ -208,7 +208,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Store Not Found</h1>
             <p className="text-gray-600 mb-6">The store you're looking for doesn't exist.</p>
-            <Link href="/stores" className="inline-block px-6 py-3 bg-gradient-to-r from-[#0B453C] to-[#0f5c4e] text-white rounded-lg hover:shadow-lg transition-all">
+            <Link href="/stores" className="inline-block px-6 py-3 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] hover:from-black hover:to-black hover:text-white text-black rounded-lg hover:shadow-lg transition-all">
               Browse All Stores
             </Link>
           </div>
@@ -219,13 +219,13 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
+    <div className="min-h-screen bg-[#FFFBF0]">
       <Navbar />
 
       {/* Decorative Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-[#0B453C]/10 to-[#0f5c4e]/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-emerald-400/10 to-green-300/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-[#FFD23F]/10 to-[#FFE566]/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-[#FFE566]/10 to-[#FFE566]/5 rounded-full blur-3xl"></div>
       </div>
 
       {/* Breadcrumbs */}
@@ -249,7 +249,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 bg-white rounded-2xl shadow-xl p-6 flex items-center justify-center border border-gray-100">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 bg-white rounded-2xl shadow-xl p-6 flex items-center justify-center border border-gray-200">
                 <img
                   src={store.logoUrl || getStoreFaviconUrl(store)}
                   alt={store.name}
@@ -266,7 +266,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                       if (parent) {
                         target.style.display = 'none';
                         const fallback = document.createElement('div');
-                        fallback.className = 'w-full h-full bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] rounded-xl flex items-center justify-center';
+                        fallback.className = 'w-full h-full bg-gradient-to-br from-[#111111] to-black rounded-xl flex items-center justify-center';
                         fallback.innerHTML = `<span class="text-white font-bold text-4xl">${store.name.charAt(0).toUpperCase()}</span>`;
                         parent.appendChild(fallback);
                       }
@@ -284,7 +284,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                <span className="bg-gradient-to-r from-[#0B453C] to-[#0f5c4e] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#FFD23F] to-[#FFE566] bg-clip-text text-transparent">
                   {store.subStoreName || store.name}
                 </span>
               </motion.h1>
@@ -306,7 +306,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <div className="flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                <div className="flex items-center gap-1.5 bg-[#FFFBF0] text-[#B8860B] px-3 py-1.5 rounded-full text-sm font-medium">
                   <CheckCircle className="w-4 h-4" />
                   <span>Verified Store</span>
                 </div>
@@ -327,7 +327,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                 href={store.trackingLink || store.trackingUrl || store.websiteUrl || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-gradient-to-r from-[#0B453C] to-[#0f5c4e] text-white rounded-lg hover:shadow-xl transition-all duration-300 hover:scale-105 font-semibold"
+                className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black rounded-lg hover:from-black hover:to-black hover:text-white hover:shadow-xl transition-all duration-300 hover:scale-105 font-semibold"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
@@ -349,7 +349,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h2 className="text-3xl md:text-4xl font-bold mb-2">
-              Available <span className="bg-gradient-to-r from-[#0B453C] to-[#0f5c4e] bg-clip-text text-transparent">Coupons</span>
+              Available <span className="bg-gradient-to-r from-[#FFD23F] to-[#FFE566] bg-clip-text text-transparent">Coupons</span>
             </h2>
             <p className="text-gray-600">
               {coupons.length > 0
@@ -361,19 +361,19 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
           {coupons.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl shadow-md">
               <p className="text-gray-500 text-lg mb-4">No coupons available for this store right now.</p>
-              <Link href="/stores" className="inline-block px-6 py-3 bg-gradient-to-r from-[#0B453C] to-[#0f5c4e] text-white rounded-lg hover:shadow-lg transition-all">
+              <Link href="/stores" className="inline-block px-6 py-3 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] hover:from-black hover:to-black hover:text-white text-black rounded-lg hover:shadow-lg transition-all">
                 Browse Other Stores
               </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {coupons.map((coupon, index) => {
-                const isExpired = coupon.expiryDate && coupon.expiryDate.toDate() < new Date();
+                const isExpired = coupon.expiryDate && new Date(coupon.expiryDate) < new Date();
 
                 return (
                   <motion.div
                     key={coupon.id}
-                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-[#0B453C]/30 cursor-pointer"
+                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-200 hover:border-[#E6BC2E] cursor-pointer"
                     onClick={() => !isExpired && handleCouponClick(coupon)}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -381,7 +381,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                     whileHover={{ y: -5 }}
                   >
                     {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-transparent to-emerald-50/30 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute inset-0 bg-[#FFFBF0]/50 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                     <div className="relative z-10">
                       {/* Header */}
@@ -391,7 +391,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                             {coupon.storeName || coupon.title || 'Special Offer'}
                           </h3>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <div className="flex items-center gap-1 text-green-600 text-sm">
+                            <div className="flex items-center gap-1 text-[#B8860B] text-sm">
                               <CheckCircle className="w-4 h-4" />
                               <span className="font-medium">Verified</span>
                             </div>
@@ -423,7 +423,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                             e.stopPropagation();
                             handleCouponClick(coupon);
                           }}
-                          className="relative w-full bg-gradient-to-r from-[#0B453C] to-[#0f5c4e] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 group/btn hover:shadow-lg flex items-center justify-center gap-2 overflow-hidden"
+                          className="relative w-full bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black font-semibold px-6 py-3 rounded-lg transition-all duration-300 group/btn hover:from-black hover:to-black hover:text-white hover:shadow-lg flex items-center justify-center gap-2 overflow-hidden"
                         >
                           <span className="flex items-center gap-2">
                             {coupon.couponType === 'code' ? (
@@ -439,7 +439,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                             )}
                           </span>
                           {getLastTwoDigits(coupon) && (
-                            <div className="hidden sm:flex w-0 opacity-0 group-hover/btn:w-16 group-hover/btn:opacity-100 transition-all duration-300 items-center justify-center border-l-2 border-dashed border-white/70 ml-2 pl-2">
+                            <div className="hidden sm:flex w-0 opacity-0 group-hover/btn:w-16 group-hover/btn:opacity-100 transition-all duration-300 items-center justify-center border-l-2 border-dashed border-black/30 ml-2 pl-2">
                               <span className="text-white font-bold text-xs">...{getLastTwoDigits(coupon)}</span>
                             </div>
                           )}
@@ -461,7 +461,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <h2 className="text-3xl md:text-4xl font-bold mb-2">
-                Related <span className="bg-gradient-to-r from-[#0B453C] to-[#0f5c4e] bg-clip-text text-transparent">Stores</span>
+                Related <span className="bg-gradient-to-r from-[#FFD23F] to-[#FFE566] bg-clip-text text-transparent">Stores</span>
               </h2>
               <p className="text-gray-600">Discover more amazing deals from similar stores</p>
             </div>
@@ -474,7 +474,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                   className="group"
                 >
                   <motion.div
-                    className="bg-white rounded-xl p-4 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-[#0B453C]/30 text-center"
+                    className="bg-white rounded-xl p-4 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-[#E6BC2E] text-center"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.05 }}
@@ -497,7 +497,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                             if (parent) {
                               target.style.display = 'none';
                               const fallback = document.createElement('div');
-                              fallback.className = 'w-16 h-16 rounded-lg bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] flex items-center justify-center';
+                              fallback.className = 'w-16 h-16 rounded-lg bg-gradient-to-br from-[#111111] to-black flex items-center justify-center';
                               fallback.innerHTML = `<span class="text-white font-bold text-xl">${relatedStore.name.charAt(0)}</span>`;
                               parent.appendChild(fallback);
                             }
@@ -505,7 +505,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
                         }}
                       />
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-[#0B453C] transition-colors">
+                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-[#E6BC2E] transition-colors">
                       {relatedStore.name}
                     </h3>
                   </motion.div>
@@ -516,7 +516,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
             <div className="text-center mt-8">
               <Link
                 href="/stores"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#0B453C] text-[#0B453C] rounded-lg hover:bg-[#0B453C] hover:text-white transition-all duration-300 font-semibold"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#FFD23F] text-[#B8860B] rounded-lg hover:bg-black hover:text-white transition-all duration-300 font-semibold"
               >
                 View All Stores
                 <ArrowRight className="w-5 h-5" />
@@ -530,7 +530,7 @@ export default function StorePageClient({ params }: { params: { id: string } }) 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <Link
           href="/stores"
-          className="inline-flex items-center gap-2 text-[#0B453C] hover:text-[#0f5c4e] font-semibold transition-colors"
+          className="inline-flex items-center gap-2 text-[#B8860B] hover:text-[#E6BC2E] font-semibold transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />

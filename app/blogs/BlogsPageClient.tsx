@@ -88,7 +88,7 @@ export default function BlogsPage() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full bg-gradient-to-br from-green-50 via-white to-emerald-50 py-12 sm:py-16 md:py-20 border-b border-green-100"
+        className="w-full bg-[#FFFBF0] py-12 sm:py-16 md:py-20 border-b border-[#FFD23F]/40"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
           <div className="text-center">
@@ -99,7 +99,7 @@ export default function BlogsPage() {
               className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4"
             >
               <span className="text-gray-900">Recent</span>{' '}
-              <span className="text-[#0B453C]">News & Articles</span>
+              <span className="text-[#B8860B]">News & Articles</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -131,7 +131,7 @@ export default function BlogsPage() {
                 placeholder="Search articles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-3 pl-12 border-2 border-green-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B453C] focus:border-[#0B453C] transition-all text-gray-900"
+                className="w-full px-4 py-3 pl-12 border-2 border-[#FFD23F]/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFD23F] focus:border-[#FFD23F] transition-all text-gray-900"
               />
               <svg
                 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -173,7 +173,7 @@ export default function BlogsPage() {
               <motion.svg
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-                className="w-24 h-24 mx-auto text-green-200 mb-4"
+                className="w-24 h-24 mx-auto text-[#B8860B]/40 mb-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -193,7 +193,7 @@ export default function BlogsPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSearchQuery('')}
-                  className="bg-[#0B453C] hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+                  className="bg-[#FFD23F] hover:bg-black hover:text-white text-black font-semibold px-6 py-3 rounded-lg transition-colors"
                 >
                   Clear Search
                 </motion.button>
@@ -236,7 +236,7 @@ export default function BlogsPage() {
                         duration: 0.4,
                         ease: [0.4, 0, 0.2, 1]
                       }}
-                      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group border border-gray-100 hover:border-green-200 flex flex-col"
+                      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group border border-gray-200 hover:border-[#E6BC2E] flex flex-col"
                     >
                       {/* Image */}
                       <motion.div
@@ -255,8 +255,8 @@ export default function BlogsPage() {
                               const parent = target.parentElement;
                               if (parent) {
                                 parent.innerHTML = `
-                                  <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
-                                    <svg class="w-16 h-16 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <div class="w-full h-full flex items-center justify-center bg-[#FFFBF0]">
+                                    <svg class="w-16 h-16 text-[#B8860B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                   </div>
@@ -265,8 +265,8 @@ export default function BlogsPage() {
                             }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
-                            <svg className="w-16 h-16 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-full h-full flex items-center justify-center bg-[#FFFBF0]">
+                            <svg className="w-16 h-16 text-[#B8860B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                           </div>
@@ -278,7 +278,7 @@ export default function BlogsPage() {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="absolute top-4 right-4 bg-gradient-to-r from-[#0B453C] to-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg"
+                            className="absolute top-4 right-4 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black text-xs font-bold px-3 py-1.5 rounded-full shadow-lg"
                           >
                             {formatDate(article.date, article.createdAt)}
                           </motion.div>
@@ -296,7 +296,7 @@ export default function BlogsPage() {
                       <div className="p-6 flex flex-col flex-grow">
                         {/* Title */}
                         <motion.h3
-                          whileHover={{ color: '#0B453C' }}
+                          whileHover={{ color: '#FFD23F' }}
                           className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 transition-colors"
                         >
                           {article.title || 'Untitled Article'}
@@ -316,7 +316,7 @@ export default function BlogsPage() {
                             >
                               <Link
                                 href={`/blogs/${article.id}`}
-                                className="inline-flex items-center gap-2 bg-gradient-to-r from-[#0B453C] to-emerald-600 hover:from-emerald-700 hover:to-[#0B453C] text-white font-semibold px-5 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg w-full justify-center"
+                                className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] hover:from-black hover:to-black hover:text-white text-black font-semibold px-5 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg w-full justify-center"
                               >
                                 Read More
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

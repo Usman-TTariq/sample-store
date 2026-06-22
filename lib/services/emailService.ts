@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { siteConfig } from '@/lib/seo/config'
 
 export interface EmailSettings {
   id?: string
@@ -32,7 +33,7 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
         const settings = JSON.parse(data.content)
         return {
           id: data.id,
-          email1: settings.email1 || 'admin@coupachu.com',
+          email1: settings.email1 || siteConfig.emails.admin,
           email2: settings.email2 || '',
           email3: settings.email3 || '',
           updatedAt: data.updated_at,
@@ -45,7 +46,7 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
     // Return default if no settings exist
     return {
       id: emailSettingsDocId,
-      email1: 'admin@coupachu.com',
+      email1: siteConfig.emails.admin,
       email2: '',
       email3: '',
     }
@@ -53,7 +54,7 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
     console.error('Error getting email settings:', error)
     return {
       id: emailSettingsDocId,
-      email1: 'admin@coupachu.com',
+      email1: siteConfig.emails.admin,
       email2: '',
       email3: '',
     }

@@ -6,6 +6,7 @@ import Breadcrumbs from '@/app/components/Breadcrumbs';
 import Newsletter from '@/app/components/Newsletter';
 import Footer from '@/app/components/Footer';
 import { Mail, Clock, MapPin, Send, CheckCircle, AlertCircle, Phone, Globe, MessageSquare, User, AtSign, Type } from 'lucide-react';
+import { siteConfig } from '@/lib/seo/config';
 
 export default function ContactUsPage() {
   const [formData, setFormData] = useState({
@@ -99,18 +100,18 @@ export default function ContactUsPage() {
       <Breadcrumbs items={[{ label: 'Contact Us' }]} />
 
       {/* Hero Section */}
-      <div className="w-full bg-gradient-to-br from-green-50 via-white to-emerald-50 py-16 sm:py-20 md:py-24 relative overflow-hidden">
+      <div className="w-full bg-[#FFFBF0] py-16 sm:py-20 md:py-24 relative overflow-hidden">
         {/* Decorative Circles */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-green-200/20 rounded-full -mr-48 -mt-48 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-200/20 rounded-full -ml-36 -mb-36 blur-3xl"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#FFE566]/20 rounded-full -mr-48 -mt-48 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#FFE566]/20 rounded-full -ml-36 -mb-36 blur-3xl"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-[#0B453C] text-sm font-semibold mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFFBF0] text-[#B8860B] text-sm font-semibold mb-6">
             <MessageSquare className="w-4 h-4" />
             <span>24/7 Support Support</span>
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
-            Get in <span className="text-[#0B453C]">Touch</span>
+            Get in <span className="text-[#B8860B]">Touch</span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
             Have a question about a deal or need technical help? Our team of experts is ready to assist you.
@@ -124,42 +125,42 @@ export default function ContactUsPage() {
 
           {/* Minimalist Contact Info Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-16">
-            <div className="group flex items-center gap-4 p-5 bg-gray-50/50 rounded-2xl border border-gray-100 hover:border-[#0B453C]/20 hover:bg-white hover:shadow-xl transition-all duration-300">
-              <div className="w-10 h-10 bg-[#0B453C] rounded-xl flex items-center justify-center text-white">
+            <div className="group flex items-center gap-4 p-5 bg-gray-50/50 rounded-2xl border border-gray-200 hover:border-[#E6BC2E] hover:bg-white hover:shadow-xl transition-all duration-300">
+              <div className="w-10 h-10 bg-[#FFD23F] rounded-xl flex items-center justify-center text-black">
                 <Mail className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Email Us</p>
-                <p className="text-sm font-bold text-[#0B453C]">contact@COUPACHU.com</p>
+                <p className="text-sm font-bold text-[#B8860B]">{siteConfig.emails.contact}</p>
               </div>
             </div>
 
-            <div className="group flex items-center gap-4 p-5 bg-gray-50/50 rounded-2xl border border-gray-100 hover:border-[#0B453C]/20 hover:bg-white hover:shadow-xl transition-all duration-300">
-              <div className="w-10 h-10 bg-[#0B453C] rounded-xl flex items-center justify-center text-white">
+            <div className="group flex items-center gap-4 p-5 bg-gray-50/50 rounded-2xl border border-gray-200 hover:border-[#E6BC2E] hover:bg-white hover:shadow-xl transition-all duration-300">
+              <div className="w-10 h-10 bg-[#FFD23F] rounded-xl flex items-center justify-center text-black">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Response Time</p>
-                <p className="text-sm font-bold text-[#0B453C]">24-48 Hours</p>
+                <p className="text-sm font-bold text-[#B8860B]">24-48 Hours</p>
               </div>
             </div>
 
-            <div className="group flex items-center gap-4 p-5 bg-gray-50/50 rounded-2xl border border-gray-100 hover:border-[#0B453C]/20 hover:bg-white hover:shadow-xl transition-all duration-300">
-              <div className="w-10 h-10 bg-[#0B453C] rounded-xl flex items-center justify-center text-white">
+            <div className="group flex items-center gap-4 p-5 bg-gray-50/50 rounded-2xl border border-gray-200 hover:border-[#E6BC2E] hover:bg-white hover:shadow-xl transition-all duration-300">
+              <div className="w-10 h-10 bg-[#FFD23F] rounded-xl flex items-center justify-center text-black">
                 <Globe className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Availability</p>
-                <p className="text-sm font-bold text-[#0B453C]">Everyday 24/7</p>
+                <p className="text-sm font-bold text-[#B8860B]">Everyday 24/7</p>
               </div>
             </div>
           </div>
 
           {/* Centered Narrow Form Card */}
           <div className="max-w-xl mx-auto">
-            <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.08)] p-8 sm:p-12 relative overflow-hidden">
+            <div className="bg-white border border-gray-200 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.08)] p-8 sm:p-12 relative overflow-hidden">
               {/* Top Accent Line */}
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#0B453C] via-emerald-400 to-[#0B453C]"></div>
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FFD23F] via-[#FFE566] to-[#FFD23F]"></div>
 
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">Send us a Message</h2>
@@ -170,7 +171,7 @@ export default function ContactUsPage() {
                 <div className="space-y-1.5">
                   <label htmlFor="name" className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
                   <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#0B453C] transition-colors duration-300">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#B8860B] transition-colors duration-300">
                       <User className="w-4 h-4" />
                     </div>
                     <input
@@ -180,7 +181,7 @@ export default function ContactUsPage() {
                       value={formData.name}
                       onChange={handleChange}
                       required
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0B453C]/10 focus:border-[#0B453C] focus:bg-white transition-all duration-300 text-gray-900 font-semibold text-sm"
+                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#FFD23F]/10 focus:border-[#FFD23F] focus:bg-white transition-all duration-300 text-gray-900 font-semibold text-sm"
                       placeholder="John Doe"
                     />
                   </div>
@@ -189,7 +190,7 @@ export default function ContactUsPage() {
                 <div className="space-y-1.5">
                   <label htmlFor="email" className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
                   <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#0B453C] transition-colors duration-300">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#B8860B] transition-colors duration-300">
                       <AtSign className="w-4 h-4" />
                     </div>
                     <input
@@ -199,7 +200,7 @@ export default function ContactUsPage() {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0B453C]/10 focus:border-[#0B453C] focus:bg-white transition-all duration-300 text-gray-900 font-semibold text-sm"
+                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#FFD23F]/10 focus:border-[#FFD23F] focus:bg-white transition-all duration-300 text-gray-900 font-semibold text-sm"
                       placeholder="john@example.com"
                     />
                   </div>
@@ -208,7 +209,7 @@ export default function ContactUsPage() {
                 <div className="space-y-1.5">
                   <label htmlFor="subject" className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Subject</label>
                   <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#0B453C] transition-colors duration-300">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#B8860B] transition-colors duration-300">
                       <Type className="w-4 h-4" />
                     </div>
                     <input
@@ -217,7 +218,7 @@ export default function ContactUsPage() {
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0B453C]/10 focus:border-[#0B453C] focus:bg-white transition-all duration-300 text-gray-900 font-semibold text-sm"
+                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#FFD23F]/10 focus:border-[#FFD23F] focus:bg-white transition-all duration-300 text-gray-900 font-semibold text-sm"
                       placeholder="What is this regarding?"
                     />
                   </div>
@@ -226,7 +227,7 @@ export default function ContactUsPage() {
                 <div className="space-y-1.5">
                   <label htmlFor="message" className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Message</label>
                   <div className="relative group">
-                    <div className="absolute left-4 top-5 text-gray-300 group-focus-within:text-[#0B453C] transition-colors duration-300">
+                    <div className="absolute left-4 top-5 text-gray-300 group-focus-within:text-[#B8860B] transition-colors duration-300">
                       <MessageSquare className="w-4 h-4" />
                     </div>
                     <textarea
@@ -236,7 +237,7 @@ export default function ContactUsPage() {
                       onChange={handleChange}
                       required
                       rows={4}
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0B453C]/10 focus:border-[#0B453C] focus:bg-white transition-all duration-300 text-gray-900 font-semibold text-sm resize-none"
+                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#FFD23F]/10 focus:border-[#FFD23F] focus:bg-white transition-all duration-300 text-gray-900 font-semibold text-sm resize-none"
                       placeholder="Tell us how we can help..."
                     />
                   </div>
@@ -244,7 +245,7 @@ export default function ContactUsPage() {
 
                 {/* Status Messages */}
                 {submitStatus.message && (
-                  <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-500 ${submitStatus.type === 'success' ? 'bg-green-50 text-[#0B453C] border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+                  <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-500 ${submitStatus.type === 'success' ? 'bg-[#FFFBF0] text-[#B8860B] border border-[#FFD23F]/40' : 'bg-red-50 text-red-800 border border-red-200'
                     }`}>
                     {submitStatus.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
                     <span className="font-bold text-xs sm:text-sm">{submitStatus.message}</span>
@@ -255,7 +256,7 @@ export default function ContactUsPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-4 bg-[#0B453C] hover:bg-[#093a32] text-white font-extrabold rounded-2xl shadow-xl shadow-[#0B453C]/10 hover:shadow-2xl hover:shadow-[#0B453C]/20 hover:-translate-y-1 transition-all duration-500 disabled:opacity-50 disabled:translate-y-0 flex items-center justify-center gap-3 group overflow-hidden relative"
+                    className="w-full py-4 bg-[#FFD23F] hover:bg-black hover:text-white text-black font-extrabold rounded-2xl shadow-xl shadow-[#FFD23F]/10 hover:shadow-2xl hover:shadow-[#FFD23F]/20 hover:-translate-y-1 transition-all duration-500 disabled:opacity-50 disabled:translate-y-0 flex items-center justify-center gap-3 group overflow-hidden relative"
                   >
                     {isSubmitting ? (
                       <>
@@ -266,7 +267,7 @@ export default function ContactUsPage() {
                       <>
                         <span className="relative z-10">Send Message</span>
                         <Send className="w-4 h-4 relative z-10 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-500" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-[#0B453C] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#FFFBF0] to-[#FFD23F] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                       </>
                     )}
                   </button>

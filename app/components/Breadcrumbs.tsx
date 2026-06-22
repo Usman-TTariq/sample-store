@@ -77,7 +77,7 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
                     <li className="flex items-center group">
                         <Link
                             href="/"
-                            className="flex items-center gap-1.5 text-gray-600 hover:text-[#0B453C] transition-all duration-300 hover:scale-105"
+                            className="flex items-center gap-1.5 text-gray-600 hover:text-[#E6BC2E] transition-all duration-300 hover:scale-105"
                         >
                             <Home className="w-4 h-4" />
                             <span className="font-medium">Home</span>
@@ -96,7 +96,7 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
                                 {/* Breadcrumb Item */}
                                 {isLast || !item.href ? (
                                     <span
-                                        className="text-[#0B453C] font-semibold px-3 py-1.5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-[#0B453C]/20"
+                                        className="text-[#B8860B] font-semibold px-3 py-1.5 bg-[#FFFBF0] rounded-lg border border-[#FFD23F]/40"
                                         aria-current="page"
                                     >
                                         {item.label}
@@ -104,7 +104,7 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
                                 ) : (
                                     <Link
                                         href={item.href}
-                                        className="text-gray-600 hover:text-[#0B453C] transition-all duration-300 font-medium hover:underline hover:underline-offset-4 px-2 py-1 rounded hover:bg-green-50"
+                                        className="text-gray-600 hover:text-[#E6BC2E] transition-all duration-300 font-medium hover:underline hover:underline-offset-4 px-2 py-1 rounded hover:bg-[#FFFBF0]"
                                     >
                                         {item.label}
                                     </Link>

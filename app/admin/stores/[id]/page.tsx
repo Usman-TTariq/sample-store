@@ -674,7 +674,7 @@ export default function EditStorePage() {
 
             {/* Show Cloudinary URL if uploaded */}
             {logoUrl && logoUploadMethod === 'url' && (
-              <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
+              <div className="mt-2 p-2 bg-[#FFFBF0] rounded text-sm text-[#B8860B]">
                 <strong>✅ Uploaded to Cloudinary:</strong>
                 <div className="mt-1 break-all text-xs">{logoUrl}</div>
               </div>

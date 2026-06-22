@@ -54,7 +54,7 @@ export default function CartPage() {
           <div className="flex items-center justify-between mb-6 sm:mb-8">
             <div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2">
-                My <span className="text-[#0B453C]">Cart</span>
+                My <span className="text-[#B8860B]">Cart</span>
               </h1>
               <p className="text-gray-600 text-sm sm:text-base">
                 {cartItems.length} {cartItems.length === 1 ? 'coupon' : 'coupons'} saved
@@ -83,7 +83,7 @@ export default function CartPage() {
               <p className="text-gray-400 text-sm mb-6">Start adding coupons to your cart!</p>
               <Link
                 href="/"
-                className="inline-block px-6 py-3 bg-gradient-to-r from-[#0B453C] to-emerald-600 text-white font-semibold rounded-lg hover:from-emerald-700 hover:to-[#0B453C] transition-all"
+                className="inline-block px-6 py-3 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black font-semibold rounded-lg hover:from-black hover:to-black hover:text-white transition-all"
               >
                 Browse Coupons
               </Link>
@@ -93,7 +93,7 @@ export default function CartPage() {
               {cartItems.map((item) => (
                 <div
                   key={item.couponId}
-                  className="group bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:border-[#0B453C] hover:shadow-lg transition-all duration-300 relative"
+                  className="group bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:border-[#E6BC2E] hover:shadow-lg transition-all duration-300 relative"
                 >
                   <button
                     onClick={() => handleRemove(item.couponId)}
@@ -120,7 +120,7 @@ export default function CartPage() {
                   )}
 
                   <div className="text-center">
-                    <h3 className="font-bold text-lg text-gray-900 mb-2 group-hover:text-[#0B453C] transition-colors">
+                    <h3 className="font-bold text-lg text-gray-900 mb-2 group-hover:text-[#E6BC2E] transition-colors">
                       {item.code}
                     </h3>
                     {item.storeName && (

@@ -1,13 +1,14 @@
+import { siteConfig } from '@/lib/seo/config';
 import TermsAndConditionsPageClient from './TermsAndConditionsPageClient';
 
 export const metadata = {
   title: 'Terms and Conditions',
-  description: 'Review the terms and conditions for using COUPACHU coupon and cashback platform.',
-  alternates: { canonical: 'https://coupachu.com/terms-and-conditions' },
+  description: `Review the terms and conditions for using ${siteConfig.name} coupon and cashback platform.`,
+  alternates: { canonical: `${siteConfig.url}/terms-and-conditions` },
   openGraph: {
     title: 'Terms and Conditions',
-    description: 'Review the terms and conditions for using COUPACHU coupon and cashback platform.',
-    url: 'https://coupachu.com/terms-and-conditions',
+    description: `Review the terms and conditions for using ${siteConfig.name} coupon and cashback platform.`,
+    url: `${siteConfig.url}/terms-and-conditions`,
   },
 };
 

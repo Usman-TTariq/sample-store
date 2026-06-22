@@ -105,11 +105,11 @@ export default function Testimonials() {
     }, [isHovered]);
 
     return (
-        <section className="py-20 bg-gradient-to-br from-green-50 via-white to-emerald-50 relative overflow-hidden">
+        <section className="py-20 bg-[#FFFBF0] relative overflow-hidden">
             {/* Decorative Background Elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-[#0B453C]/10 to-[#0f5c4e]/5 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-emerald-400/10 to-green-300/5 rounded-full blur-3xl"></div>
+                <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-[#FFD23F]/10 to-[#FFE566]/5 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-[#FFE566]/10 to-[#FFE566]/5 rounded-full blur-3xl"></div>
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -121,7 +121,7 @@ export default function Testimonials() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
                     >
-                        <span className="bg-gradient-to-r from-[#0B453C] to-[#0f5c4e] bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-[#FFD23F] to-[#FFE566] bg-clip-text text-transparent">
                             What Our Users Say
                         </span>
                     </motion.h2>
@@ -167,14 +167,14 @@ export default function Testimonials() {
                                             }}
                                         >
                                             {/* Card */}
-                                            <div className={`relative bg-white rounded-2xl p-8 shadow-xl transition-all duration-500 border border-gray-100 ${isCenter ? 'shadow-2xl' : 'shadow-lg'
+                                            <div className={`relative bg-white rounded-2xl p-8 shadow-xl transition-all duration-500 border border-gray-200 ${isCenter ? 'shadow-2xl' : 'shadow-lg'
                                                 }`}>
                                                 {/* Gradient Overlay */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-transparent to-emerald-50/30 rounded-2xl pointer-events-none"></div>
+                                                <div className="absolute inset-0 bg-[#FFFBF0]/50 rounded-2xl pointer-events-none"></div>
 
                                                 {/* Quote Icon */}
                                                 <div className="relative mb-4">
-                                                    <div className="w-14 h-14 bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] rounded-xl flex items-center justify-center shadow-lg">
+                                                    <div className="w-14 h-14 bg-gradient-to-br from-[#111111] to-black rounded-xl flex items-center justify-center shadow-lg">
                                                         <Quote className="w-7 h-7 text-white" strokeWidth={2} />
                                                     </div>
                                                 </div>
@@ -193,7 +193,7 @@ export default function Testimonials() {
 
                                                 {/* Author */}
                                                 <div className="flex items-center gap-4 relative">
-                                                    <div className="w-14 h-14 bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] rounded-full flex items-center justify-center text-2xl shadow-md">
+                                                    <div className="w-14 h-14 bg-gradient-to-br from-[#111111] to-black rounded-full flex items-center justify-center text-2xl shadow-md">
                                                         {testimonial.avatar}
                                                     </div>
                                                     <div>
@@ -208,7 +208,7 @@ export default function Testimonials() {
 
                                                 {/* Decorative Corner */}
                                                 {isCenter && (
-                                                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#0B453C]/10 to-transparent rounded-bl-full rounded-tr-2xl"></div>
+                                                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FFD23F]/10 to-transparent rounded-bl-full rounded-tr-2xl"></div>
                                                 )}
                                             </div>
                                         </motion.div>
@@ -219,15 +219,15 @@ export default function Testimonials() {
                             {/* Navigation Buttons */}
                             <button
                                 onClick={prevTestimonial}
-                                className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-[#0B453C] group z-20"
+                                className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-[#E6BC2E] group z-20"
                                 aria-label="Previous testimonial"
                             >
-                                <ChevronLeft className="w-6 h-6 text-gray-600 group-hover:text-[#0B453C] transition-colors" />
+                                <ChevronLeft className="w-6 h-6 text-gray-600 group-hover:text-[#E6BC2E] transition-colors" />
                             </button>
 
                             <button
                                 onClick={nextTestimonial}
-                                className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-300 hover:scale-110 z-20"
+                                className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-br from-[#111111] to-black rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-300 hover:scale-110 z-20"
                                 aria-label="Next testimonial"
                             >
                                 <ChevronRight className="w-6 h-6 text-white" />
@@ -255,13 +255,13 @@ export default function Testimonials() {
                                     className="w-full max-w-md"
                                 >
                                     {/* Card */}
-                                    <div className="relative bg-white rounded-2xl p-6 shadow-2xl border border-gray-100">
+                                    <div className="relative bg-white rounded-2xl p-6 shadow-2xl border border-gray-200">
                                         {/* Gradient Overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-transparent to-emerald-50/30 rounded-2xl pointer-events-none"></div>
+                                        <div className="absolute inset-0 bg-[#FFFBF0]/50 rounded-2xl pointer-events-none"></div>
 
                                         {/* Quote Icon */}
                                         <div className="relative mb-4">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] rounded-xl flex items-center justify-center shadow-lg">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-[#111111] to-black rounded-xl flex items-center justify-center shadow-lg">
                                                 <Quote className="w-6 h-6 text-white" strokeWidth={2} />
                                             </div>
                                         </div>
@@ -280,7 +280,7 @@ export default function Testimonials() {
 
                                         {/* Author */}
                                         <div className="flex items-center gap-4 relative">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] rounded-full flex items-center justify-center text-2xl shadow-md">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-[#111111] to-black rounded-full flex items-center justify-center text-2xl shadow-md">
                                                 {currentTestimonial.avatar}
                                             </div>
                                             <div>
@@ -294,7 +294,7 @@ export default function Testimonials() {
                                         </div>
 
                                         {/* Decorative Corner */}
-                                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#0B453C]/10 to-transparent rounded-bl-full rounded-tr-2xl"></div>
+                                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#FFD23F]/10 to-transparent rounded-bl-full rounded-tr-2xl"></div>
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
@@ -310,7 +310,7 @@ export default function Testimonials() {
 
                             <button
                                 onClick={nextTestimonial}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-300 z-20"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-[#111111] to-black rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-300 z-20"
                                 aria-label="Next testimonial"
                             >
                                 <ChevronRight className="w-5 h-5 text-white" />
@@ -325,7 +325,7 @@ export default function Testimonials() {
                                 key={index}
                                 onClick={() => setCurrentIndex(index)}
                                 className={`transition-all duration-300 rounded-full ${index === currentIndex
-                                    ? 'w-8 h-2 bg-gradient-to-r from-[#0B453C] to-[#0f5c4e]'
+                                    ? 'w-8 h-2 bg-gradient-to-r from-[#FFD23F] to-[#FFE566]'
                                     : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
                                     }`}
                                 aria-label={`Go to testimonial ${index + 1}`}

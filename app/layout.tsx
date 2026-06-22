@@ -44,19 +44,9 @@ export const metadata: Metadata = {
     canonical: siteConfig.url,
   },
   icons: {
-    icon: [
-      {
-        url: '/Coupachu Icone-2.svg',
-        type: 'image/svg+xml',
-      },
-      {
-        url: '/Coupachu Icone-2.svg',
-        sizes: 'any',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/Coupachu Icone-2.svg',
-    shortcut: '/Coupachu Icone-2.svg',
+    icon: siteConfig.favicon,
+    shortcut: siteConfig.favicon,
+    apple: siteConfig.favicon,
   },
   viewport: {
     width: 'device-width',

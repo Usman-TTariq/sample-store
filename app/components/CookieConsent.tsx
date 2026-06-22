@@ -148,7 +148,7 @@ export default function CookieConsent() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-500 rounded-xl flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-[#FFD23F] to-[#FFE566] rounded-xl flex items-center justify-center">
                         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                         </svg>
@@ -181,7 +181,7 @@ export default function CookieConsent() {
                     </motion.button>
                     <motion.button
                       onClick={handleAcceptAll}
-                      className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold rounded-xl shadow-lg whitespace-nowrap"
+                      className="px-5 py-2.5 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black font-semibold rounded-xl shadow-lg whitespace-nowrap hover:from-black hover:to-black hover:text-white transition-colors"
                       whileHover={{ 
                         scale: 1.02, 
                         boxShadow: "0 10px 25px rgba(249, 115, 22, 0.4)",
@@ -223,7 +223,7 @@ export default function CookieConsent() {
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-5 flex items-center justify-between z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-500 rounded-xl flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#FFD23F] to-[#FFE566] rounded-xl flex items-center justify-center">
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                       </svg>
@@ -274,7 +274,7 @@ export default function CookieConsent() {
                       <motion.button
                         onClick={() => handleTogglePreference('analytics')}
                         className={`relative w-12 h-6 rounded-full transition-colors ${
-                          preferences.analytics ? 'bg-orange-500' : 'bg-gray-300'
+                          preferences.analytics ? 'bg-[#FFD23F]' : 'bg-gray-300'
                         }`}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -299,7 +299,7 @@ export default function CookieConsent() {
                       <motion.button
                         onClick={() => handleTogglePreference('marketing')}
                         className={`relative w-12 h-6 rounded-full transition-colors ${
-                          preferences.marketing ? 'bg-orange-500' : 'bg-gray-300'
+                          preferences.marketing ? 'bg-[#FFD23F]' : 'bg-gray-300'
                         }`}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -324,7 +324,7 @@ export default function CookieConsent() {
                       <motion.button
                         onClick={() => handleTogglePreference('functional')}
                         className={`relative w-12 h-6 rounded-full transition-colors ${
-                          preferences.functional ? 'bg-orange-500' : 'bg-gray-300'
+                          preferences.functional ? 'bg-[#FFD23F]' : 'bg-gray-300'
                         }`}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -352,7 +352,7 @@ export default function CookieConsent() {
                   </motion.button>
                   <motion.button
                     onClick={handleSavePreferences}
-                    className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold rounded-xl shadow-lg"
+                    className="px-5 py-2.5 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] text-black font-semibold rounded-xl shadow-lg hover:from-black hover:to-black hover:text-white transition-colors"
                     whileHover={{ 
                       scale: 1.02, 
                       boxShadow: "0 10px 25px rgba(249, 115, 22, 0.4)",

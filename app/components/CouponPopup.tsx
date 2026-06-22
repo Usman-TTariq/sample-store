@@ -135,10 +135,10 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
             style={{ perspective: 1000 }}
           >
             {/* Glowing background effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#0B453C] via-emerald-600 to-teal-500 rounded-2xl blur-xl opacity-50 -z-10" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#FFD23F] via-[#FFD23F] to-[#FFE566] rounded-2xl blur-xl opacity-50 -z-10" />
 
             {/* Popup Card */}
-            <div className="relative bg-gradient-to-br from-[#0B453C] via-emerald-600 to-teal-600 rounded-2xl shadow-2xl overflow-hidden border border-white/20">
+            <div className="relative bg-gradient-to-br from-[#FFD23F] via-[#FFD23F] to-[#FFE566] rounded-2xl shadow-2xl overflow-hidden border border-white/20">
               {/* Decorative top border */}
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
@@ -201,8 +201,8 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                   className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 mb-4 shadow-xl border border-white/40 relative overflow-hidden"
                 >
                   {/* Decorative corner accents - smaller */}
-                  <div className="absolute top-0 left-0 w-12 h-12 bg-gradient-to-br from-green-100 to-transparent rounded-br-full opacity-40" />
-                  <div className="absolute bottom-0 right-0 w-12 h-12 bg-gradient-to-tl from-emerald-100 to-transparent rounded-tl-full opacity-40" />
+                  <div className="absolute top-0 left-0 w-12 h-12 bg-gradient-to-br from-[#FFFBF0] to-transparent rounded-br-full opacity-40" />
+                  <div className="absolute bottom-0 right-0 w-12 h-12 bg-gradient-to-tl from-[#FFFBF0] to-transparent rounded-tl-full opacity-40" />
 
                   {coupon.logoUrl ? (
                     <div className="flex flex-col items-center relative z-10">
@@ -258,7 +258,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                     animate="visible"
                     whileHover={{ scale: 1.03, boxShadow: "0 20px 40px rgba(11, 69, 60, 0.4)" }}
                     whileTap={{ scale: 0.97 }}
-                    className="relative bg-gradient-to-r from-emerald-700 via-[#0B453C] to-emerald-800 rounded-2xl p-5 mb-4 shadow-xl cursor-pointer overflow-hidden border border-white/20"
+                    className="relative bg-gradient-to-r from-[#FFD23F] via-[#FFD23F] to-[#FFE566] rounded-2xl p-5 mb-4 shadow-xl cursor-pointer overflow-hidden border border-white/20"
                     onClick={handleCopyCode}
                   >
                     {/* Shimmer effect */}
@@ -314,7 +314,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                     variants={itemVariants}
                     initial="hidden"
                     animate="visible"
-                    className="relative bg-gradient-to-r from-emerald-700 via-[#0B453C] to-emerald-800 rounded-2xl p-5 mb-4 shadow-xl overflow-hidden border border-white/20"
+                    className="relative bg-gradient-to-r from-[#FFD23F] via-[#FFD23F] to-[#FFE566] rounded-2xl p-5 mb-4 shadow-xl overflow-hidden border border-white/20"
                   >
                     <div className="relative z-10 text-center">
                       <motion.div
@@ -349,7 +349,7 @@ export default function CouponPopup({ coupon, isOpen, onClose, onContinue }: Cou
                       handleCopyCode();
                       onContinue();
                     }}
-                    className="relative bg-white text-[#0B453C] font-bold py-3.5 px-6 rounded-xl hover:bg-gray-50 transition-all shadow-xl text-base overflow-hidden group"
+                    className="relative bg-white text-[#B8860B] font-bold py-3.5 px-6 rounded-xl hover:bg-gray-50 transition-all shadow-xl text-base overflow-hidden group"
                   >
                     {/* Button shine effect */}
                     <motion.div

@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { Facebook, Twitter, Instagram, Youtube, Linkedin, Phone, Mail, MapPin } from 'lucide-react';
+import { siteConfig } from '@/lib/seo/config';
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-br from-[#0a2f2a] to-[#042b26] text-white">
+    <footer className="bg-gradient-to-br from-[#111111] to-black text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Section */}
         <div className="py-12 border-b border-gray-700/50">
@@ -31,37 +32,37 @@ export default function Footer() {
               <h3 className="text-xl font-bold mb-4">Quick Link</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/" className="text-gray-300 hover:text-white transition text-sm">
+                  <Link href="/" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
                     Home
                   </Link>
                 </li>
                 <li>
-                  <Link href="/about-us" className="text-gray-300 hover:text-white transition text-sm">
+                  <Link href="/about-us" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
                     About Us
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact-us" className="text-gray-300 hover:text-white transition text-sm">
+                  <Link href="/contact-us" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
                     Contact Us
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy-policy" className="text-gray-300 hover:text-white transition text-sm">
+                  <Link href="/privacy-policy" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/coupons" className="text-gray-300 hover:text-white transition text-sm">
+                  <Link href="/coupons" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
                     Browse Deals
                   </Link>
                 </li>
                 <li>
-                  <Link href="/stores" className="text-gray-300 hover:text-white transition text-sm">
+                  <Link href="/stores" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
                     Stores
                   </Link>
                 </li>
                 <li>
-                  <Link href="/blog" className="text-gray-300 hover:text-white transition text-sm">
+                  <Link href="/blog" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
                     Blog
                   </Link>
                 </li>
@@ -74,7 +75,7 @@ export default function Footer() {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm font-semibold mb-1">Send Us Email</p>
-                  <a href="mailto:demo@gmail.com" className="text-gray-300 hover:text-white transition text-sm">
+                  <a href="mailto:demo@gmail.com" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
                     demo@gmail.com
                   </a>
                 </div>
@@ -91,38 +92,38 @@ export default function Footer() {
         </div>
 
         {/* Middle Section - Logo & Social Media */}
-        <div className="py-3 border-b border-gray-700/50">
+        <div className="py-3 border-b border-gray-600">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             {/* Logo */}
-            <div className="flex items-center justify-center gap-0.5">
+            <div className="flex items-center justify-center gap-2">
               <img
-                src="/Coupachu Icone-2.svg"
-                alt="Coupachu Icon"
-                className="w-12 h-12 object-contain -mr-1"
+                src={siteConfig.icon}
+                alt={`${siteConfig.name} Icon`}
+                className="w-12 h-12 object-contain"
               />
-              <span className="text-3xl font-bold tracking-tight mt-3">
-                <span className="text-[#CD3D1C]">o</span>
-                <span className="text-white">upachu</span>
+              <span className="text-3xl font-bold tracking-tight leading-none">
+                <span className="text-white">Sample</span>
+                <span className="text-[#FFD23F]">Store</span>
               </span>
             </div>
 
             {/* Social Media Icons */}
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-400 mr-2">Follow Us On :</span>
-              <a href="#" className="w-8 h-8 bg-[#0B453C] rounded-full flex items-center justify-center hover:bg-emerald-700 transition">
-                <Facebook className="w-4 h-4" />
+              <span className="text-sm text-white font-semibold mr-2">Follow Us On :</span>
+              <a href="#" className="w-8 h-8 bg-[#FFD23F] text-black rounded-full flex items-center justify-center hover:bg-black hover:text-white transition">
+                <Facebook className="w-4 h-4 text-current" />
               </a>
-              <a href="#" className="w-8 h-8 bg-[#0B453C] rounded-full flex items-center justify-center hover:bg-emerald-700 transition">
-                <Twitter className="w-4 h-4" />
+              <a href="#" className="w-8 h-8 bg-[#FFD23F] text-black rounded-full flex items-center justify-center hover:bg-black hover:text-white transition">
+                <Twitter className="w-4 h-4 text-current" />
               </a>
-              <a href="#" className="w-8 h-8 bg-[#0B453C] rounded-full flex items-center justify-center hover:bg-emerald-700 transition">
-                <Instagram className="w-4 h-4" />
+              <a href="#" className="w-8 h-8 bg-[#FFD23F] text-black rounded-full flex items-center justify-center hover:bg-black hover:text-white transition">
+                <Instagram className="w-4 h-4 text-current" />
               </a>
-              <a href="#" className="w-8 h-8 bg-[#0B453C] rounded-full flex items-center justify-center hover:bg-emerald-700 transition">
-                <Youtube className="w-4 h-4" />
+              <a href="#" className="w-8 h-8 bg-[#FFD23F] text-black rounded-full flex items-center justify-center hover:bg-black hover:text-white transition">
+                <Youtube className="w-4 h-4 text-current" />
               </a>
-              <a href="#" className="w-8 h-8 bg-[#0B453C] rounded-full flex items-center justify-center hover:bg-emerald-700 transition">
-                <Linkedin className="w-4 h-4" />
+              <a href="#" className="w-8 h-8 bg-[#FFD23F] text-black rounded-full flex items-center justify-center hover:bg-black hover:text-white transition">
+                <Linkedin className="w-4 h-4 text-current" />
               </a>
             </div>
           </div>
@@ -132,7 +133,7 @@ export default function Footer() {
         <div className="py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-400">
-              Copyright © 2025 <span className="text-emerald-400 font-semibold">COUPACHU</span>. All rights reserved.
+              Copyright © 2025 <span className="text-[#FFD23F] font-semibold">{siteConfig.name}</span>. All rights reserved.
             </p>
 
             {/* Payment Method Icons */}
@@ -149,7 +150,7 @@ export default function Footer() {
                 <span className="text-xs font-bold text-blue-600">AMEX</span>
               </div>
               <div className="px-3 py-1.5 bg-white rounded flex items-center justify-center">
-                <span className="text-xs font-bold text-emerald-600">₿</span>
+                <span className="text-xs font-bold text-[#B8860B]">₿</span>
               </div>
               <div className="px-3 py-1.5 bg-white rounded flex items-center justify-center">
                 <span className="text-xs font-bold text-gray-700">GPay</span>

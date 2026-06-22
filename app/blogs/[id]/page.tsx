@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { siteConfig } from '@/lib/seo/config';
 import BlogPageClient from './BlogPageClient';
 
 type Props = { params: Promise<{ id: string }> };
@@ -9,8 +10,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await getNewsById(id).catch(() => null);
 
   const title = article?.title || 'Blog Post';
-  const description = article?.description || article?.content?.slice(0, 155) || 'Read the latest articles on COUPACHU blog.';
-  const canonical = `https://coupachu.com/blogs/${id}`;
+  const description = article?.description || article?.content?.slice(0, 155) || `Read the latest articles on ${siteConfig.name} blog.`;
+  const canonical = `${siteConfig.url}/blogs/${id}`;
 
   return {
     title,

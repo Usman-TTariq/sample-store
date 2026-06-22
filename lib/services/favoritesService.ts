@@ -13,7 +13,7 @@ export interface FavoriteCoupon {
   addedAt: number; // timestamp
 }
 
-const FAVORITES_KEY = 'coupachu_favorites';
+const FAVORITES_KEY = 'sample_store_favorites';
 
 // Get all favorites
 export function getFavorites(): FavoriteCoupon[] {

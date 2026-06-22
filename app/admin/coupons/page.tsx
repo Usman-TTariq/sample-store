@@ -749,7 +749,7 @@ export default function CouponsPage() {
               setUploadPreviewError(null);
               setShowUploadModal(true);
             }}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition whitespace-nowrap"
+            className="bg-[#FFD23F] text-black px-4 py-2 rounded-lg hover:bg-black hover:text-white transition whitespace-nowrap"
           >
             Upload Coupons
           </button>
@@ -886,7 +886,7 @@ export default function CouponsPage() {
                 <button
                   type="submit"
                   disabled={uploadingBulkCoupons}
-                  className="cursor-pointer px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer px-4 py-2 rounded-lg bg-[#FFD23F] text-black hover:bg-black hover:text-white transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploadingBulkCoupons ? 'Uploading...' : 'Upload'}
                 </button>
@@ -1398,7 +1398,7 @@ export default function CouponsPage() {
 
               {/* Show Cloudinary URL if uploaded */}
               {logoUrl && logoUploadMethod === 'url' && (
-                <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
+                <div className="mt-2 p-2 bg-[#FFFBF0] rounded text-sm text-[#B8860B]">
                   <strong>✅ Uploaded to Cloudinary:</strong>
                   <div className="mt-1 break-all text-xs">{logoUrl}</div>
                 </div>
@@ -1754,7 +1754,7 @@ export default function CouponsPage() {
                       <button
                         onClick={() => handleToggleActive(coupon)}
                         className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer whitespace-nowrap ${coupon.isActive
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          ? 'bg-[#FFFBF0] text-[#B8860B] hover:bg-[#FFE566]/20'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                       >

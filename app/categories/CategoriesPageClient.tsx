@@ -51,7 +51,7 @@ export default function CategoriesPage() {
             </div>
           </div>
         ) : (
-          <div className="w-full aspect-[1728/547] bg-gradient-to-r from-green-50 to-emerald-50"></div>
+          <div className="w-full aspect-[1728/547] bg-[#FFFBF0]"></div>
         )}
       </div>
 

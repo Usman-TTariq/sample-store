@@ -1,13 +1,14 @@
+import { siteConfig } from '@/lib/seo/config';
 import FaqsPageClient from './FaqsPageClient';
 
 export const metadata = {
   title: 'Support & FAQs',
-  description: 'Find answers to common questions about COUPACHU coupons, cashback, and account management.',
-  alternates: { canonical: 'https://coupachu.com/faqs' },
+  description: `Find answers to common questions about ${siteConfig.name} coupons, cashback, and account management.`,
+  alternates: { canonical: `${siteConfig.url}/faqs` },
   openGraph: {
     title: 'Support & FAQs',
-    description: 'Find answers to common questions about COUPACHU coupons, cashback, and account management.',
-    url: 'https://coupachu.com/faqs',
+    description: `Find answers to common questions about ${siteConfig.name} coupons, cashback, and account management.`,
+    url: `${siteConfig.url}/faqs`,
   },
 };
 

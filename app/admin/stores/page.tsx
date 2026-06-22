@@ -770,7 +770,7 @@ export default function StoresPage() {
               setUploadPreviewError(null);
               setShowUploadModal(true);
             }}
-            className="cursor-pointer bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+            className="cursor-pointer bg-[#FFD23F] text-black px-4 py-2 rounded-lg hover:bg-black hover:text-white transition"
           >
             Upload Stores
           </button>
@@ -904,7 +904,7 @@ export default function StoresPage() {
                 <button
                   type="submit"
                   disabled={uploadingBulkStores}
-                  className="cursor-pointer px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer px-4 py-2 rounded-lg bg-[#FFD23F] text-black hover:bg-black hover:text-white transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploadingBulkStores ? 'Uploading...' : 'Upload'}
                 </button>
@@ -1268,7 +1268,7 @@ export default function StoresPage() {
 
               {/* Show Cloudinary URL if uploaded */}
               {logoUrl && logoUploadMethod === 'url' && (
-                <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
+                <div className="mt-2 p-2 bg-[#FFFBF0] rounded text-sm text-[#B8860B]">
                   <strong>✅ Uploaded to Cloudinary:</strong>
                   <div className="mt-1 break-all text-xs">{logoUrl}</div>
                 </div>
@@ -1581,7 +1581,7 @@ export default function StoresPage() {
                             Total: {couponStatsByStore[store.id].total}
                           </span>
                           <br />
-                          <span className="text-green-600">
+                          <span className="text-[#B8860B]">
                             Active: {couponStatsByStore[store.id].active}
                           </span>
                           <br />
@@ -1611,7 +1611,7 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${store.status === 'active'
-                        ? 'bg-green-100 text-green-800'
+                        ? 'bg-[#FFFBF0] text-[#B8860B]'
                         : 'bg-red-100 text-red-800'
                         }`}>
                         {store.status || 'active'}

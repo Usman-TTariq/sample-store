@@ -1,13 +1,14 @@
+import { siteConfig } from '@/lib/seo/config';
 import PrivacyPolicyPageClient from './PrivacyPolicyPageClient';
 
 export const metadata = {
   title: 'Privacy Policy',
-  description: 'Read COUPACHU privacy policy to understand how we collect, use, and protect your personal information.',
-  alternates: { canonical: 'https://coupachu.com/privacy-policy' },
+  description: `Read ${siteConfig.name} privacy policy to understand how we collect, use, and protect your personal information.`,
+  alternates: { canonical: `${siteConfig.url}/privacy-policy` },
   openGraph: {
     title: 'Privacy Policy',
-    description: 'Read COUPACHU privacy policy to understand how we collect, use, and protect your personal information.',
-    url: 'https://coupachu.com/privacy-policy',
+    description: `Read ${siteConfig.name} privacy policy to understand how we collect, use, and protect your personal information.`,
+    url: `${siteConfig.url}/privacy-policy`,
   },
 };
 

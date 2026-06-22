@@ -21,13 +21,13 @@ const ScrollContainer = ({ children, className }: { children: React.ReactNode; c
         <div className="relative group/section">
             <button
                 onClick={() => scroll("left")}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -ml-5 z-20 w-9 h-9 bg-[#0B453C] shadow-xl border border-[#0B453C] rounded-full flex items-center justify-center text-white hover:bg-[#08352e] hover:scale-110 active:scale-95 transition-all opacity-0 group-hover/section:opacity-100 disabled:opacity-0"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -ml-5 z-20 w-9 h-9 bg-[#FFD23F] shadow-xl border border-[#FFD23F] rounded-full flex items-center justify-center text-black hover:bg-black hover:text-white hover:scale-110 active:scale-95 transition-all opacity-0 group-hover/section:opacity-100 disabled:opacity-0"
             >
                 <ChevronLeft className="w-5 h-5" />
             </button>
             <button
                 onClick={() => scroll("right")}
-                className="absolute right-0 top-1/2 -translate-y-1/2 -mr-5 z-20 w-9 h-9 bg-[#0B453C] shadow-xl border border-[#0B453C] rounded-full flex items-center justify-center text-white hover:bg-[#08352e] hover:scale-110 active:scale-95 transition-all opacity-0 group-hover/section:opacity-100"
+                className="absolute right-0 top-1/2 -translate-y-1/2 -mr-5 z-20 w-9 h-9 bg-[#FFD23F] shadow-xl border border-[#FFD23F] rounded-full flex items-center justify-center text-black hover:bg-black hover:text-white hover:scale-110 active:scale-95 transition-all opacity-0 group-hover/section:opacity-100"
             >
                 <ChevronRight className="w-5 h-5" />
             </button>
@@ -83,8 +83,8 @@ export default function ShopByCategory() {
                 <ScrollContainer>
                     {categories.map((cat, index) => {
                         const isEven = index % 2 === 0;
-                        const bgClass = isEven ? "bg-green-50" : "bg-emerald-50";
-                        const iconColorClass = isEven ? "text-[#0B453C]" : "text-emerald-700";
+                        const bgClass = isEven ? "bg-[#FFFBF0]" : "bg-[#FFFBF0]";
+                        const iconColorClass = isEven ? "text-[#B8860B]" : "text-[#B8860B]";
 
                         return (
                             <Link
@@ -109,7 +109,7 @@ export default function ShopByCategory() {
                                         <span className="text-xl font-bold relative z-10">{cat.name.charAt(0)}</span>
                                     )}
                                 </motion.div>
-                                <span className="text-sm font-bold text-gray-700 text-center whitespace-nowrap group-hover:text-[#0B453C] transition-colors">
+                                <span className="text-sm font-bold text-gray-700 text-center whitespace-nowrap group-hover:text-[#E6BC2E] transition-colors">
                                     {cat.name}
                                 </span>
                             </Link>
@@ -119,7 +119,7 @@ export default function ShopByCategory() {
 
                 {/* Pagination Dots */}
                 <div className="flex justify-center items-center gap-1.5 mt-4">
-                    <span className="w-6 h-1.5 bg-[#0B453C] rounded-full"></span>
+                    <span className="w-6 h-1.5 bg-[#FFD23F] rounded-full"></span>
                     <span className="w-1.5 h-1.5 bg-gray-200 rounded-full"></span>
                     <span className="w-1.5 h-1.5 bg-gray-200 rounded-full"></span>
                     <span className="w-1.5 h-1.5 bg-gray-200 rounded-full"></span>

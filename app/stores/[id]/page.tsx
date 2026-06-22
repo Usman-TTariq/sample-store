@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { siteConfig } from '@/lib/seo/config';
 import StorePageClient from './StorePageClient';
 
 type Props = { params: Promise<{ id: string }> };
@@ -12,8 +13,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const title = store?.seoTitle || (store?.name ? `${store.name} Coupons & Promo Codes ${new Date().getFullYear()}` : 'Store Not Found');
-  const description = store?.seoDescription || (store?.name ? `Find the latest ${store.name} coupons, promo codes, and cashback offers on COUPACHU. Verified deals updated daily.` : '');
-  const canonical = `https://coupachu.com/stores/${id}`;
+  const description = store?.seoDescription || (store?.name ? `Find the latest ${store.name} coupons, promo codes, and cashback offers on ${siteConfig.name}. Verified deals updated daily.` : '');
+  const canonical = `${siteConfig.url}/stores/${id}`;
 
   return {
     title,

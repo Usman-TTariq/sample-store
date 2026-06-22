@@ -6,6 +6,7 @@ import Navbar from '@/app/components/Navbar';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
 import Newsletter from '@/app/components/Newsletter';
 import Footer from '@/app/components/Footer';
+import { siteConfig } from '@/lib/seo/config';
 
 export default function AboutUsPage() {
   const [banner8, setBanner8] = useState<Banner | null>(null);
@@ -41,7 +42,7 @@ export default function AboutUsPage() {
           <div className="w-full aspect-[1728/547] min-h-[200px] sm:min-h-[250px]">
             <img
               src="/banners/about-hero.webp"
-              alt="About COUPACHU"
+              alt={`About ${siteConfig.name}`}
               className="w-full h-full object-cover"
             />
           </div>
@@ -60,7 +61,7 @@ export default function AboutUsPage() {
         <div className="max-w-7xl mx-auto">
           {/* Title */}
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-8 sm:mb-12">
-            The Home of <span className="text-[#0B453C]">Real Deals</span>
+            The Home of <span className="text-[#B8860B]">Real Deals</span>
           </h2>
 
           {/* Top Section - Text Left, Image Right */}
@@ -68,25 +69,25 @@ export default function AboutUsPage() {
             {/* Left Side - Text Content */}
             <div className="w-full md:w-1/2">
               {/* Text Box */}
-              <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] rounded-lg overflow-hidden shadow-xl bg-gradient-to-br from-green-50 via-white to-emerald-50 relative flex flex-col border-2 border-green-200/50">
+              <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] rounded-lg overflow-hidden shadow-xl bg-[#FFFBF0] relative flex flex-col border-2 border-[#FFD23F]/40">
                 {/* Decorative Corner Elements */}
-                <div className="absolute top-0 left-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 border-t-2 sm:border-t-3 md:border-t-4 border-l-2 sm:border-l-3 md:border-l-4 border-[#0B453C] rounded-tl-lg"></div>
-                <div className="absolute bottom-0 right-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 border-b-2 sm:border-b-3 md:border-b-4 border-r-2 sm:border-r-3 md:border-r-4 border-[#0B453C] rounded-br-lg"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 border-t-2 sm:border-t-3 md:border-t-4 border-l-2 sm:border-l-3 md:border-l-4 border-[#FFD23F] rounded-tl-lg"></div>
+                <div className="absolute bottom-0 right-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 border-b-2 sm:border-b-3 md:border-b-4 border-r-2 sm:border-r-3 md:border-r-4 border-[#FFD23F] rounded-br-lg"></div>
 
                 {/* Content */}
                 <div className="flex-1 flex flex-col justify-center p-4 sm:p-6 md:p-8 lg:p-12 relative z-10">
                   <div className="flex items-start gap-2 sm:gap-3 mb-3 sm:mb-4">
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-1 shadow-md">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#111111] to-black flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-1 shadow-md">
                       <span className="text-white font-bold text-xs sm:text-sm">•</span>
                     </div>
                     <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 leading-tight">
-                      The Ultimate Guide to Smart Shopping with <span className="text-[#0B453C]">COUPACHU</span>
+                      The Ultimate Guide to Smart Shopping with <span className="text-[#B8860B]">{siteConfig.name}</span>
                     </h3>
                   </div>
 
                   <div className="ml-0 sm:ml-8 md:ml-11 space-y-2 sm:space-y-3 md:space-y-4">
                     <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
-                      In a time when the digital marketplace overflows with money-saving opportunities, COUPACHU stands out as the ultimate destination for smart shoppers.
+                      In a time when the digital marketplace overflows with money-saving opportunities, {siteConfig.name} stands out as the ultimate destination for smart shoppers.
                     </p>
                     <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed">
                       We simplify smart shopping by providing reliable, verified, and up-to-date coupons across various categories like fashion, electronics, groceries, and home essentials.
@@ -94,7 +95,7 @@ export default function AboutUsPage() {
                   </div>
 
                   {/* Decorative Line */}
-                  <div className="ml-0 sm:ml-8 md:ml-11 mt-4 sm:mt-5 md:mt-6 w-16 sm:w-20 md:w-24 h-0.5 sm:h-1 bg-gradient-to-r from-[#0B453C] to-emerald-400 rounded-full"></div>
+                  <div className="ml-0 sm:ml-8 md:ml-11 mt-4 sm:mt-5 md:mt-6 w-16 sm:w-20 md:w-24 h-0.5 sm:h-1 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] rounded-full"></div>
                 </div>
               </div>
             </div>
@@ -145,19 +146,19 @@ export default function AboutUsPage() {
             {/* Right Side - Text Content */}
             <div className="w-full md:w-1/2">
               {/* Text Box */}
-              <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] rounded-lg overflow-hidden shadow-xl bg-gradient-to-br from-green-50 via-white to-emerald-50 relative flex flex-col border-2 border-green-200/50">
+              <div className="w-full min-h-[300px] sm:min-h-[400px] md:aspect-[618/588] md:max-h-[588px] rounded-lg overflow-hidden shadow-xl bg-[#FFFBF0] relative flex flex-col border-2 border-[#FFD23F]/40">
                 {/* Decorative Corner Elements */}
-                <div className="absolute top-0 left-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 border-t-2 sm:border-t-3 md:border-t-4 border-l-2 sm:border-l-3 md:border-l-4 border-[#0B453C] rounded-tl-lg"></div>
-                <div className="absolute bottom-0 right-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 border-b-2 sm:border-b-3 md:border-b-4 border-r-2 sm:border-r-3 md:border-r-4 border-[#0B453C] rounded-br-lg"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 border-t-2 sm:border-t-3 md:border-t-4 border-l-2 sm:border-l-3 md:border-l-4 border-[#FFD23F] rounded-tl-lg"></div>
+                <div className="absolute bottom-0 right-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 border-b-2 sm:border-b-3 md:border-b-4 border-r-2 sm:border-r-3 md:border-r-4 border-[#FFD23F] rounded-br-lg"></div>
 
                 {/* Content */}
                 <div className="flex-1 flex flex-col justify-center p-4 sm:p-6 md:p-8 lg:p-12 relative z-10">
                   <div className="flex items-start gap-2 sm:gap-3 mb-3 sm:mb-4">
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#0B453C] to-[#0f5c4e] flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-1 shadow-md">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#111111] to-black flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-1 shadow-md">
                       <span className="text-white font-bold text-xs sm:text-sm">•</span>
                     </div>
                     <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 leading-tight">
-                      The Ultimate Guide to Smart Shopping with <span className="text-[#0B453C]">COUPACHU</span>
+                      The Ultimate Guide to Smart Shopping with <span className="text-[#B8860B]">{siteConfig.name}</span>
                     </h3>
                   </div>
 
@@ -171,7 +172,7 @@ export default function AboutUsPage() {
                   </div>
 
                   {/* Decorative Line */}
-                  <div className="ml-0 sm:ml-8 md:ml-11 mt-4 sm:mt-5 md:mt-6 w-16 sm:w-20 md:w-24 h-0.5 sm:h-1 bg-gradient-to-r from-[#0B453C] to-emerald-400 rounded-full"></div>
+                  <div className="ml-0 sm:ml-8 md:ml-11 mt-4 sm:mt-5 md:mt-6 w-16 sm:w-20 md:w-24 h-0.5 sm:h-1 bg-gradient-to-r from-[#FFD23F] to-[#FFE566] rounded-full"></div>
                 </div>
               </div>
             </div>

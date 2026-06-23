@@ -1,18 +1,74 @@
 import { supabaseServer } from '@/lib/supabase/server';
 
-interface SupabaseStoreRow {
-  store_id?: string | number;
-  store_name: string;
-  description: string;
-  store_logo_url?: string | null;
-  isTrending?: boolean | null;
-  seoTitle?: string | null;
-  seoDescription?: string | null;
-  slug?: string | null;
-  subStoreName?: string | null;
-  merchant_id?: string | null;
-  network_id?: string | null;
-  tracking_link?: string | null;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function mapStoreRow(row: Record<string, unknown>) {
+  return {
+    id: row.id?.toString(),
+    storeId: row.store_id ? (typeof row.store_id === 'number' ? row.store_id : parseInt(String(row.store_id), 10)) : undefined,
+    name: (row.store_name as string) || (row.name as string) || '',
+    subStoreName: (row.subStoreName as string) || (row.sub_store_name as string) || undefined,
+    slug: (row.slug as string) || undefined,
+    description: (row.description as string) || '',
+    logoUrl: (row.store_logo_url as string) || (row.logo_url as string) || undefined,
+    websiteUrl: (row.website_url as string) || undefined,
+    seoTitle: (row.seoTitle as string) || (row.seo_title as string) || undefined,
+    seoDescription: (row.seoDescription as string) || (row.seo_description as string) || undefined,
+    isTrending: (row.isTrending as boolean) ?? (row.featured as boolean) ?? false,
+    layoutPosition: (row.layout_position as number) || null,
+    categoryId: (row.category_id as string) || null,
+    couponOrder: (row.coupon_order as string[]) || null,
+    trackingLink: (row.tracking_link as string) || undefined,
+    country: (row.country as string) || undefined,
+    status: (row.status as string) || undefined,
+    createdAt: (row.created_at as string) || undefined,
+  };
+}
+
+async function findStoreByParam(supabase: ReturnType<typeof supabaseServer>, idParam: string) {
+  if (UUID_RE.test(idParam)) {
+    const { data } = await supabase.from('stores').select('id').eq('id', idParam).limit(1).maybeSingle();
+    if (data) return data;
+  }
+
+  if (/^\d+$/.test(idParam)) {
+    const { data } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('store_id', Number(idParam))
+      .limit(1)
+      .maybeSingle();
+    if (data) return data;
+  }
+
+  const { data: bySlug } = await supabase
+    .from('stores')
+    .select('id')
+    .eq('slug', idParam)
+    .limit(1)
+    .maybeSingle();
+  if (bySlug) return bySlug;
+
+  const { data: bySlugCi } = await supabase
+    .from('stores')
+    .select('id')
+    .ilike('slug', idParam)
+    .limit(1)
+    .maybeSingle();
+  if (bySlugCi) return bySlugCi;
+
+  if (idParam) {
+    const nameGuess = idParam.replace(/-/g, ' ');
+    const { data: byName } = await supabase
+      .from('stores')
+      .select('id')
+      .ilike('store_name', nameGuess)
+      .limit(1)
+      .maybeSingle();
+    if (byName) return byName;
+  }
+
+  return null;
 }
 
 export async function GET(
@@ -24,7 +80,6 @@ export async function GET(
     const { id: slug } = await params;
     const safeSlug = slug ?? '';
 
-    // 1) Try exact match on slug
     let { data, error } = await supabase
       .from('stores')
       .select('*')
@@ -32,7 +87,6 @@ export async function GET(
       .limit(1)
       .maybeSingle();
 
-    // 2) If not found, try case-insensitive slug match 
     if (!data) {
       const { data: ciData } = await supabase
         .from('stores')
@@ -43,8 +97,6 @@ export async function GET(
       data = ciData || null;
     }
 
-    // 3) If still not found and slug is non-empty, try matching store_name
-    //    (e.g., "MLK Store US" vs "MLK-Store-US")
     if (!data && safeSlug) {
       const nameGuess = safeSlug.replace(/-/g, ' ');
       const { data: nameData } = await supabase
@@ -54,6 +106,16 @@ export async function GET(
         .limit(1)
         .maybeSingle();
       data = nameData || null;
+    }
+
+    if (!data && UUID_RE.test(safeSlug)) {
+      const { data: uuidData } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('id', safeSlug)
+        .limit(1)
+        .maybeSingle();
+      data = uuidData || null;
     }
 
     if (error) {
@@ -71,26 +133,8 @@ export async function GET(
       );
     }
 
-    const row = data as any;
-
-    const store = {
-      id: row.id?.toString(),
-      storeId: row.store_id ? (typeof row.store_id === 'number' ? row.store_id : parseInt(row.store_id, 10)) : undefined,
-      name: row.store_name || row.name || '',
-      subStoreName: row.subStoreName || row.sub_store_name || undefined,
-      slug: row.slug || undefined,
-      description: row.description || '',
-      logoUrl: row.store_logo_url || row.logo_url || undefined,
-      seoTitle: row.seoTitle || row.seo_title || undefined,
-      seoDescription: row.seoDescription || row.seo_description || undefined,
-      isTrending: row.isTrending ?? row.featured ?? false,
-      layoutPosition: row.layout_position || null,
-      categoryId: row.category_id || null,
-      createdAt: row.created_at || undefined,
-    };
-
     return new Response(
-      JSON.stringify({ success: true, store }),
+      JSON.stringify({ success: true, store: mapStoreRow(data as Record<string, unknown>) }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
@@ -114,97 +158,46 @@ export async function PATCH(
     const supabase = supabaseServer();
     const { id } = await params;
     const idParam = id ?? '';
-    // console.log("params awaited idParam: ", idParam);
-
     const body = await req.json();
-    // console.log("body: ", body);
 
-    // Allowed fields to update
-    const updates: Partial<SupabaseStoreRow> = {};
+    const updates: Record<string, unknown> = {};
     if (body.store_id !== undefined) updates.store_id = body.store_id;
     if (body.store_name !== undefined) updates.store_name = body.store_name;
     if (body.description !== undefined) updates.description = body.description;
     if (body.store_logo_url !== undefined) updates.store_logo_url = body.store_logo_url;
     if (body.subStoreName !== undefined) updates.subStoreName = body.subStoreName;
+    if (body.sub_store_name !== undefined) updates.sub_store_name = body.sub_store_name;
     if (body.slug !== undefined) updates.slug = body.slug;
     if (body.seoTitle !== undefined) updates.seoTitle = body.seoTitle;
+    if (body.seo_title !== undefined) updates.seo_title = body.seo_title;
     if (body.seoDescription !== undefined) updates.seoDescription = body.seoDescription;
+    if (body.seo_description !== undefined) updates.seo_description = body.seo_description;
     if (body.isTrending !== undefined) updates.isTrending = body.isTrending;
-    if (body.merchant_id !== undefined) updates.merchant_id = body.merchant_id;
-    if (body.network_id !== undefined) updates.network_id = body.network_id;
     if (body.tracking_link !== undefined) updates.tracking_link = body.tracking_link;
+    if (body.website_url !== undefined) updates.website_url = body.website_url;
+    if (body.country !== undefined) updates.country = body.country;
+    if (body.status !== undefined) updates.status = body.status;
+    if (body.category_id !== undefined) updates.category_id = body.category_id;
 
-    // Make sure something is being updated
     if (Object.keys(updates).length === 0) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'No fields provided to update.'
-        }),
+        JSON.stringify({ success: false, error: 'No fields provided to update.' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Try finding the record first (using same flexible logic as GET) to get its primary key
-    let existingData = null;
-
-    // 1) If idParam is numeric, try matching store_id first
-    if (/^\d+$/.test(idParam)) {
-      const { data } = await supabase
-        .from('stores')
-        .select('store_id')
-        .eq('store_id', Number(idParam))
-        .limit(1)
-        .maybeSingle();
-      existingData = data;
-    }
-
-    // 2) If not found yet (or idParam wasn't numeric), try matching slug
-    if (!existingData) {
-      const { data } = await supabase
-        .from('stores')
-        .select('store_id')
-        .eq('slug', idParam)
-        .limit(1)
-        .maybeSingle();
-      existingData = data;
-    }
-
-    // 3) If not found, try case-insensitive slug match
-    if (!existingData) {
-      const { data } = await supabase
-        .from('stores')
-        .select('store_id')
-        .ilike('slug', idParam)
-        .limit(1)
-        .maybeSingle();
-      existingData = data;
-    }
-
-    // 4) If still not found, try matching store_name
-    if (!existingData && idParam) {
-      const nameGuess = idParam.replace(/-/g, ' ');
-      const { data } = await supabase
-        .from('stores')
-        .select('store_id')
-        .ilike('store_name', nameGuess)
-        .limit(1)
-        .maybeSingle();
-      existingData = data;
-    }
-
-    if (!existingData) {
+    const existing = await findStoreByParam(supabase, idParam);
+    if (!existing) {
       return new Response(
         JSON.stringify({ success: false, error: 'Store not found' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Now update using the found store_id (most reliable)
     const { data, error } = await supabase
       .from('stores')
       .update(updates)
-      .eq('store_id', existingData.store_id)
+      .eq('id', existing.id)
       .select('*')
       .maybeSingle();
 
@@ -223,35 +216,16 @@ export async function PATCH(
       );
     }
 
-    // Reformat output the same as GET
-    const row = data as any;
-    const store = {
-      id: row.id?.toString(),
-      storeId: row.store_id ? (typeof row.store_id === 'number' ? row.store_id : parseInt(row.store_id, 10)) : undefined,
-      name: row.store_name || row.name || '',
-      subStoreName: row.subStoreName || row.sub_store_name || undefined,
-      slug: row.slug || undefined,
-      description: row.description || '',
-      logoUrl: row.store_logo_url || row.logo_url || undefined,
-      seoTitle: row.seoTitle || row.seo_title || undefined,
-      seoDescription: row.seoDescription || row.seo_description || undefined,
-      isTrending: row.isTrending ?? row.featured ?? false,
-      layoutPosition: row.layout_position || null,
-      categoryId: row.category_id || null,
-      createdAt: row.created_at || undefined,
-    };
-
     return new Response(
-      JSON.stringify({ success: true, store }),
+      JSON.stringify({ success: true, store: mapStoreRow(data as Record<string, unknown>) }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err) {
     console.error('Unexpected error in PATCH store route:', err);
-
     return new Response(
       JSON.stringify({
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error updating store'
+        error: err instanceof Error ? err.message : 'Unknown error updating store',
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
@@ -267,66 +241,15 @@ export async function DELETE(
     const { id } = await params;
     const idParam = id ?? '';
 
-    // Try finding the record first to ensure it exists and get correct ID
-    let existingData = null;
-
-    // 1) If idParam is numeric, try matching store_id first
-    if (/^\d+$/.test(idParam)) {
-      const { data } = await supabase
-        .from('stores')
-        .select('store_id')
-        .eq('store_id', Number(idParam))
-        .limit(1)
-        .maybeSingle();
-      existingData = data;
-    }
-
-    // 2) If not found yet, try matching slug
-    if (!existingData) {
-      const { data } = await supabase
-        .from('stores')
-        .select('store_id')
-        .eq('slug', idParam)
-        .limit(1)
-        .maybeSingle();
-      existingData = data;
-    }
-
-    // 3) Fallback: case-insensitive slug
-    if (!existingData) {
-      const { data } = await supabase
-        .from('stores')
-        .select('store_id')
-        .ilike('slug', idParam)
-        .limit(1)
-        .maybeSingle();
-      existingData = data;
-    }
-
-    // 4) Fallback: name
-    if (!existingData && idParam) {
-      const nameGuess = idParam.replace(/-/g, ' ');
-      const { data } = await supabase
-        .from('stores')
-        .select('store_id')
-        .ilike('store_name', nameGuess)
-        .limit(1)
-        .maybeSingle();
-      existingData = data;
-    }
-
-    if (!existingData) {
+    const existing = await findStoreByParam(supabase, idParam);
+    if (!existing) {
       return new Response(
         JSON.stringify({ success: false, error: 'Store not found' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Delete the record using store_id
-    const { error } = await supabase
-      .from('stores')
-      .delete()
-      .eq('store_id', existingData.store_id);
+    const { error } = await supabase.from('stores').delete().eq('id', existing.id);
 
     if (error) {
       console.error('Error deleting store:', error);
@@ -345,7 +268,7 @@ export async function DELETE(
     return new Response(
       JSON.stringify({
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error deleting store'
+        error: err instanceof Error ? err.message : 'Unknown error deleting store',
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );

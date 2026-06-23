@@ -4,6 +4,7 @@ import { extractOriginalCloudinaryUrl } from '@/lib/utils/cloudinary'
 export interface Coupon {
   id?: string
   code: string
+  title?: string
   storeName?: string
   storeIds?: string[]
   discount: number

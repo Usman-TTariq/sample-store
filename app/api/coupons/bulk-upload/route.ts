@@ -28,6 +28,19 @@ interface StoreLookup {
   id: string;
   storeId?: number;
   name: string;
+  slug?: string;
+  websiteUrl?: string;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
 }
 
 function loadStoresFromDb(raw: Record<string, unknown>[]): StoreLookup[] {
@@ -35,35 +48,116 @@ function loadStoresFromDb(raw: Record<string, unknown>[]): StoreLookup[] {
     id: String(item.id),
     storeId: item.store_id != null ? Number(item.store_id) : undefined,
     name: String(item.store_name || ''),
+    slug: item.slug ? String(item.slug) : undefined,
+    websiteUrl: item.website_url ? String(item.website_url) : undefined,
   }));
+}
+
+function extractHostname(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null;
+  try {
+    const withProtocol = /^https?:\/\//i.test(value.trim()) ? value.trim() : `https://${value.trim()}`;
+    return new URL(withProtocol).hostname.replace(/^www\./i, '').toLowerCase();
+  } catch {
+    return null;
+  }
 }
 
 function resolveStore(
   row: IncomingCouponRow,
   storesList: StoreLookup[]
-): { uuid: string; storeName: string } | null {
+): { uuid: string; storeName: string; method: string } | null {
+  const storeNameRaw = row.storeName?.trim();
+
+  if (storeNameRaw) {
+    const needle = storeNameRaw.toLowerCase();
+    const exact = storesList.find((s) => s.name?.toLowerCase() === needle);
+    if (exact) {
+      return { uuid: exact.id, storeName: exact.name, method: 'exact name' };
+    }
+
+    const partial = storesList.find((s) => {
+      const name = s.name?.toLowerCase() || '';
+      return name.includes(needle) || needle.includes(name);
+    });
+    if (partial) {
+      return { uuid: partial.id, storeName: partial.name, method: 'partial name' };
+    }
+  }
+
+  const idCandidate = row.store_id != null ? String(row.store_id).trim() : '';
+  if (idCandidate && UUID_RE.test(idCandidate)) {
+    const byUuid = storesList.find((s) => s.id === idCandidate);
+    if (byUuid) {
+      return { uuid: byUuid.id, storeName: byUuid.name, method: 'UUID' };
+    }
+  }
+
   if (row.store_id != null && row.store_id !== '') {
     const num =
-      typeof row.store_id === 'number'
-        ? row.store_id
-        : parseInt(String(row.store_id), 10);
+      typeof row.store_id === 'number' ? row.store_id : parseInt(String(row.store_id), 10);
     if (!Number.isNaN(num)) {
       const match = storesList.find((s) => s.storeId === num);
       if (match) {
-        return { uuid: match.id, storeName: match.name };
+        return { uuid: match.id, storeName: match.name, method: 'serial store_id' };
       }
     }
   }
 
-  if (row.storeName?.trim()) {
-    const needle = row.storeName.trim().toLowerCase();
-    const match = storesList.find((s) => s.name?.toLowerCase() === needle);
-    if (match) {
-      return { uuid: match.id, storeName: match.name };
+  const urlHost = extractHostname(row.url);
+  if (urlHost) {
+    const byWebsite = storesList.find((s) => {
+      const storeHost = extractHostname(s.websiteUrl);
+      const slugHost = s.slug ? `${s.slug}.com` : null;
+      return storeHost === urlHost || slugHost === urlHost || s.slug === urlHost.split('.')[0];
+    });
+    if (byWebsite) {
+      return { uuid: byWebsite.id, storeName: byWebsite.name, method: 'URL hostname' };
     }
   }
 
   return null;
+}
+
+async function autoCreateStore(
+  supabase: ReturnType<typeof supabaseServer>,
+  storeName: string,
+  websiteUrl?: string | null,
+  logoUrl?: string | null,
+  existingSlugs?: Set<string>
+): Promise<string | null> {
+  const baseSlug = slugify(storeName);
+  if (!baseSlug) return null;
+
+  let slug = baseSlug;
+  let suffix = 2;
+  while (existingSlugs?.has(slug)) {
+    slug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+  existingSlugs?.add(slug);
+
+  const { data, error } = await supabase
+    .from('stores')
+    .insert({
+      store_name: storeName,
+      slug,
+      website_url: websiteUrl || null,
+      store_logo_url: logoUrl || null,
+      status: 'active',
+      country: 'US',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select('id, store_name, store_id, slug, website_url')
+    .single();
+
+  if (error || !data) {
+    console.error('autoCreateStore failed:', error);
+    return null;
+  }
+
+  return String(data.id);
 }
 
 function mapCouponRow(
@@ -119,7 +213,7 @@ export async function POST(req: Request) {
 
     const { data: storeData, error: storeError } = await supabase
       .from('stores')
-      .select('id, store_id, store_name');
+      .select('id, store_id, store_name, slug, website_url');
 
     if (storeError) {
       console.error('Failed to load stores for coupon bulk upload:', storeError);
@@ -129,24 +223,75 @@ export async function POST(req: Request) {
       );
     }
 
-    const storesList = loadStoresFromDb(storeData || []);
+    let storesList = loadStoresFromDb(storeData || []);
+    const { data: slugRows } = await supabase.from('stores').select('slug');
+    const existingSlugs = new Set(
+      (slugRows || []).map((r) => String(r.slug || '').toLowerCase()).filter(Boolean)
+    );
+    const pendingCreates = new Set<string>();
+    const storeNamesCreated: string[] = [];
+
     const mappedRows: ReturnType<typeof mapCouponRow>[] = [];
     const errors: string[] = [];
     let skipped = 0;
 
-    rows.forEach((row, index) => {
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
       const rowNum = index + 1;
-      const resolved = resolveStore(row, storesList);
+      let resolved = resolveStore(row, storesList);
+
+      if (!resolved) {
+        const storeLabel = row.storeName?.trim() || `store_id ${row.store_id ?? '?'}`;
+        const createKey = storeLabel.toLowerCase();
+
+        if (!pendingCreates.has(createKey)) {
+          pendingCreates.add(createKey);
+          const newId = await autoCreateStore(
+            supabase,
+            row.storeName?.trim() || storeLabel,
+            row.url,
+            row.logoUrl,
+            existingSlugs
+          );
+
+          if (newId) {
+            const newName = row.storeName?.trim() || storeLabel;
+            storesList = [
+              ...storesList,
+              {
+                id: newId,
+                name: newName,
+                storeId: undefined,
+                websiteUrl: row.url || undefined,
+              },
+            ];
+            storeNamesCreated.push(newName);
+            resolved = { uuid: newId, storeName: newName, method: 'auto-created' };
+          }
+        } else {
+          const existing = storesList.find(
+            (s) => s.name.toLowerCase() === createKey || s.name.toLowerCase().includes(createKey)
+          );
+          if (existing) {
+            resolved = { uuid: existing.id, storeName: existing.name, method: 'pending batch create' };
+          }
+        }
+      }
 
       if (!resolved) {
         skipped += 1;
-        const idHint = row.store_id != null ? `store_id ${row.store_id}` : `Store Name "${row.storeName || ''}"`;
-        errors.push(`Row ${rowNum}: store not found (${idHint})`);
-        return;
+        const hints: string[] = [];
+        if (row.storeName) hints.push(`Store Name "${row.storeName}"`);
+        if (row.store_id != null) hints.push(`store_id ${row.store_id}`);
+        if (row.url) hints.push(`URL "${row.url}"`);
+        errors.push(
+          `Row ${rowNum}: could not resolve store (${hints.join(', ') || 'no store identifier'})`
+        );
+        continue;
       }
 
       mappedRows.push(mapCouponRow(row, resolved.uuid, resolved.storeName));
-    });
+    }
 
     if (!mappedRows.length) {
       return new Response(
@@ -156,6 +301,8 @@ export async function POST(req: Request) {
           uploaded: 0,
           skipped,
           errors,
+          storesCreated: storeNamesCreated.length,
+          storeNames: storeNamesCreated,
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
@@ -168,7 +315,15 @@ export async function POST(req: Request) {
     if (insertError) {
       console.error('Supabase bulk upload error:', insertError);
       return new Response(
-        JSON.stringify({ success: false, error: insertError.message, uploaded: 0, skipped, errors }),
+        JSON.stringify({
+          success: false,
+          error: insertError.message,
+          uploaded: 0,
+          skipped,
+          errors,
+          storesCreated: storeNamesCreated.length,
+          storeNames: storeNamesCreated,
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -182,6 +337,8 @@ export async function POST(req: Request) {
         uploaded,
         skipped,
         errors,
+        storesCreated: storeNamesCreated.length,
+        storeNames: storeNamesCreated,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -194,6 +351,8 @@ export async function POST(req: Request) {
         uploaded: 0,
         skipped: 0,
         errors: [],
+        storesCreated: 0,
+        storeNames: [],
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );

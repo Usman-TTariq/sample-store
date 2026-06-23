@@ -10,6 +10,7 @@ import {
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
 import { getStores, Store } from '@/lib/services/storeService';
+import { normalizeRedirectUrl } from '@/lib/utils/url';
 
 export default function EditCouponPage() {
   const params = useParams();
@@ -129,14 +130,14 @@ export default function EditCouponPage() {
       // Update via Supabase PATCH API
       try {
         const payload = {
-          store_id: selectedStoreIds[0] ? Number(selectedStoreIds[0]) || selectedStoreIds[0] : undefined,
+          storeIds: selectedStoreIds,
           code: updates.code,
           categoryId: updates.categoryId,
           currentUses: updates.currentUses,
           description: updates.description,
           discount: updates.discount,
           discountType: updates.discountType,
-          expiryDate: updates.expiryDate,
+          expiryDate: updates.expiryDate || null,
           getCodeText: updates.getCodeText,
           getDealText: updates.getDealText,
           isActive: updates.isActive,
@@ -146,19 +147,22 @@ export default function EditCouponPage() {
           layoutPosition: updates.layoutPosition,
           logoUrl: updates.logoUrl,
           maxUses: updates.maxUses,
-          url: updates.url,
+          url: normalizeRedirectUrl(updates.url),
           couponType: updates.couponType,
           storeName: updates.storeName,
         };
 
         const res = await fetch(`/api/coupons/supabase/by-id/${encodeURIComponent(couponId)}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
           body: JSON.stringify(payload),
         });
 
         const data = await res.json();
         if (res.ok && data.success) {
+          setCoupon(data.coupon as Coupon);
+          setFormData({ ...data.coupon, couponType: data.coupon.couponType || 'code' });
+          router.refresh();
           router.push('/admin/coupons');
         } else {
           alert(`Failed to update coupon in Supabase: ${data.error || 'Unknown error'}`);
@@ -518,6 +522,29 @@ export default function EditCouponPage() {
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={4}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="expiryDate" className="block text-sm font-semibold text-gray-700 mb-1">
+              Expiry Date
+            </label>
+            <input
+              id="expiryDate"
+              name="expiryDate"
+              type="date"
+              value={
+                formData.expiryDate
+                  ? String(formData.expiryDate).split('T')[0]
+                  : ''
+              }
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  expiryDate: e.target.value ? e.target.value : null,
+                })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 

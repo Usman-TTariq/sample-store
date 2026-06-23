@@ -1,0 +1,21 @@
+Store Name,Title,Type,Code,Description,Discount,DiscountType,ExpiryDate,IsActive,URL,MaxUses
+Sephora,20% Off Beauty Must-Haves,code,BEAUTY20,Save 20% on skincare makeup and fragrance,20,percentage,2026-09-30,true,https://www.sephora.com,500
+Sephora,Free Shipping on $50+,deal,,Free standard shipping on orders over $50,0,percentage,2026-08-15,true,https://www.sephora.com,1000
+Target,$10 Off $50 Sitewide,code,TARGET10,Get $10 off when you spend $50 or more online,10,fixed,2026-10-01,true,https://www.target.com,800
+Target,15% Off Home Decor,code,HOME15,15% off select home and furniture items,15,percentage,2026-11-30,true,https://www.target.com,600
+Walmart,Roll Back Savings Deal,deal,,Extra savings on thousands of rollback items,5,percentage,2026-12-31,true,https://www.walmart.com,2000
+Adidas,25% Off Full Price,code,ADI25,25% off full-price adidas shoes and apparel,25,percentage,2026-09-15,true,https://www.adidas.com,400
+Adidas,Free Shipping Deal,deal,,Free shipping on orders over $75,0,percentage,2026-08-31,true,https://www.adidas.com,900
+DoorDash,$12 Off First Order,code,EATS12,$12 off your first DoorDash delivery order,12,fixed,2026-07-31,true,https://www.doordash.com,1500
+DoorDash,Zero Delivery Fee Weekend,deal,,No delivery fee on orders from partner restaurants,0,percentage,2026-08-20,true,https://www.doordash.com,1200
+Airbnb,$40 Off Stays $200+,code,AIRBNB40,$40 off when you book a stay of $200 or more,40,fixed,2026-10-15,true,https://www.airbnb.com,300
+Airbnb,Weekly Stay Discount,deal,,Save up to 15% on weekly reservations,15,percentage,2026-11-01,true,https://www.airbnb.com,500
+Zara,New Season 20% Off,code,ZARA20,20% off new season collection for members,20,percentage,2026-09-01,true,https://www.zara.com,350
+IKEA,10% Off Kitchen Storage,code,KITCHEN10,10% off kitchen organization and storage,10,percentage,2026-08-30,true,https://www.ikea.com,450
+Costco,New Member Shop Card Offer,deal,,Join Costco and receive a shop card with new membership,20,fixed,2026-12-15,true,https://www.costco.com,200
+Shein,30% Off First Order,code,SHEIN30,30% off your first Shein order for new customers,30,percentage,2026-08-31,true,https://www.shein.com,2000
+Shein,Free Express Shipping,deal,,Free express shipping on orders over $29,0,percentage,2026-09-30,true,https://www.shein.com,1800
+Chewy,15% Off First Autoship,code,CHEWY15,15% off your first autoship pet food order,15,percentage,2026-10-31,true,https://www.chewy.com,700
+Chewy,$20 Off $100 Pet Supplies,code,PET20,$20 off orders of $100 or more on pet essentials,20,fixed,2026-11-15,true,https://www.chewy.com,550
+Wayfair,10% Off Furniture,code,WAY10,10% off select living room and bedroom furniture,10,percentage,2026-09-20,true,https://www.wayfair.com,400
+Ulta,21 Days of Beauty Deal,deal,,Daily beauty steals during the 21 Days of Beauty event,21,percentage,2026-09-10,true,https://www.ulta.com,650

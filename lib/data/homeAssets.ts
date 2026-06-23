@@ -1,6 +1,6 @@
 /** Curated Unsplash images for homepage hero & category cards */
 export const HERO_IMAGES = [
-  'https://images.unsplash.com/photo-1483985988355-763728e3685b?w=800&h=1000&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=1000&fit=crop&q=80',
   'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=1000&fit=crop&q=80',
   'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800&h=1000&fit=crop&q=80',
   'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=1000&fit=crop&q=80',
@@ -18,7 +18,7 @@ export const CATEGORY_CARDS = [
   {
     name: 'Fashion',
     href: '/categories',
-    image: 'https://images.unsplash.com/photo-1483985988355-763728e3685b?w=400&h=300&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=300&fit=crop&q=80',
     emoji: '👗',
   },
   {

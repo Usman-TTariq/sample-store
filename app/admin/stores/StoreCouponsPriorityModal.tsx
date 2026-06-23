@@ -141,7 +141,6 @@ export default function StoreCouponsPriorityModal({ store, onClose }: StoreCoupo
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-600">
                   <th className="pb-3 w-10" aria-label="Drag" />
-                  <th className="pb-3 w-10 font-semibold">#</th>
                   <th className="pb-3 font-semibold">Title</th>
                   <th className="pb-3 font-semibold">Code</th>
                   <th className="pb-3 font-semibold">Status</th>
@@ -162,7 +161,6 @@ export default function StoreCouponsPriorityModal({ store, onClose }: StoreCoupo
                     <td className="py-3 text-gray-400">
                       <GripVertical className="w-4 h-4" />
                     </td>
-                    <td className="py-3 text-gray-700">{index + 1}</td>
                     <td className="py-3 text-gray-900 font-medium pr-4">{coupon.title}</td>
                     <td className="py-3 text-gray-700 font-mono">{coupon.code || '—'}</td>
                     <td className="py-3">

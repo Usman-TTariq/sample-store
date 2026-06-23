@@ -207,7 +207,8 @@ export default function CouponsPage() {
     const indexOf = (name: string) => header.indexOf(name.toLowerCase());
 
     // Support both old CSV format and new Excel format
-    const idxStoreName = indexOf('store name');
+    const idxStoreName =
+      indexOf('store name') !== -1 ? indexOf('store name') : indexOf('store_name');
     const idxTitle = indexOf('title');
     const idxCouponType = indexOf('coupontype') !== -1 ? indexOf('coupontype') : indexOf('type');
     const idxCode = indexOf('code');
@@ -237,31 +238,31 @@ export default function CouponsPage() {
 
     const supabaseRows = dataRows
       .map((row) => {
-        let store_id = idxStoreId !== -1 ? parseInt(row[idxStoreId] || '0', 10) : 0;
+        const storeName =
+          idxStoreName !== -1 ? row[idxStoreName]?.toString().trim() || null : null;
+        const store_id =
+          idxStoreId !== -1 && row[idxStoreId] != null && String(row[idxStoreId]).trim() !== ''
+            ? row[idxStoreId]
+            : null;
 
-        // If no store_id, try to find store by name
-        if (!store_id && idxStoreName !== -1) {
-          const storeName = row[idxStoreName]?.toString().trim();
-          if (storeName) {
-            const foundStore = stores.find(s =>
-              s.name?.toLowerCase() === storeName.toLowerCase()
-            );
-            if (foundStore && foundStore.storeId) {
-              store_id = foundStore.storeId;
-            }
-          }
-        }
+        if (!storeName && !store_id) return null;
 
-        if (!store_id) return null;
-
-        // Use Title if available, otherwise use Description
-        const description = idxTitle !== -1 && row[idxTitle]
-          ? row[idxTitle]
-          : (idxDescription !== -1 ? row[idxDescription] : null);
+        const description =
+          idxTitle !== -1 && row[idxTitle]
+            ? row[idxTitle]
+            : idxDescription !== -1
+              ? row[idxDescription]
+              : null;
 
         return {
           store_id,
-          couponType: idxCouponType !== -1 ? (row[idxCouponType]?.toString().toLowerCase() === 'deal' ? 'deal' : 'code') : 'code',
+          storeName,
+          couponType:
+            idxCouponType !== -1
+              ? row[idxCouponType]?.toString().toLowerCase() === 'deal'
+                ? 'deal'
+                : 'code'
+              : 'code',
           code: idxCode !== -1 ? row[idxCode] || null : null,
           categoryId: idxCategoryId !== -1 ? row[idxCategoryId] || null : null,
           currentUses: idxCurrentUses !== -1 ? parseInt(row[idxCurrentUses] || '0', 10) : 0,
@@ -274,8 +275,12 @@ export default function CouponsPage() {
           isActive: idxIsActive !== -1 ? normalizeBoolean(row[idxIsActive]) : true,
           isLatest: idxIsLatest !== -1 ? normalizeBoolean(row[idxIsLatest]) : false,
           isPopular: idxIsPopular !== -1 ? normalizeBoolean(row[idxIsPopular]) : false,
-          latestLayoutPosition: idxLatestLayoutPosition !== -1 ? (parseInt(row[idxLatestLayoutPosition] || '0', 10) || null) : null,
-          layoutPosition: idxLayoutPosition !== -1 ? (parseInt(row[idxLayoutPosition] || '0', 10) || null) : null,
+          latestLayoutPosition:
+            idxLatestLayoutPosition !== -1
+              ? parseInt(row[idxLatestLayoutPosition] || '0', 10) || null
+              : null,
+          layoutPosition:
+            idxLayoutPosition !== -1 ? parseInt(row[idxLayoutPosition] || '0', 10) || null : null,
           logoUrl: idxLogoUrl !== -1 ? row[idxLogoUrl] || null : null,
           maxUses: idxMaxUses !== -1 ? parseInt(row[idxMaxUses] || '0', 10) : 100,
           url: idxUrl !== -1 ? row[idxUrl] || null : null,
@@ -303,7 +308,15 @@ export default function CouponsPage() {
         throw new Error(result.error || 'Bulk upload failed.');
       }
 
-      alert(`Successfully uploaded ${supabaseRows.length} coupons.`);
+      let message = `Successfully uploaded ${result.uploaded ?? result.count ?? supabaseRows.length} coupon(s).`;
+      if (result.skipped) message += ` ${result.skipped} row(s) skipped.`;
+      if (result.storesCreated > 0) {
+        message += `\n\n${result.storesCreated} new store(s) auto-created: ${(result.storeNames || []).join(', ')}`;
+      }
+      if (result.errors?.length) {
+        message += `\n\nIssues:\n${result.errors.slice(0, 15).join('\n')}`;
+      }
+      alert(message);
       setShowUploadModal(false);
       setUploadPreviewRows([]);
       setUploadPreviewError(null);
@@ -394,7 +407,40 @@ export default function CouponsPage() {
     load();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const resetCouponForm = (keepSelectedStores = false) => {
+    const keptStoreIds = keepSelectedStores ? [...selectedStoreIds] : [];
+    setFormData({
+      code: '',
+      storeName: '',
+      discount: 0,
+      discountType: 'percentage',
+      description: '',
+      url: '',
+      isActive: true,
+      maxUses: 100,
+      currentUses: 0,
+      expiryDate: null,
+      isPopular: false,
+      layoutPosition: null,
+      isLatest: false,
+      latestLayoutPosition: null,
+      categoryId: null,
+      couponType: 'code',
+      getCodeText: '',
+      getDealText: '',
+    });
+    setLogoFile(null);
+    setLogoPreview(null);
+    setLogoUrl('');
+    setExtractedLogoUrl(null);
+    setCouponUrl('');
+    setFileInputKey((prev) => prev + 1);
+    setSelectedStoreIds(keptStoreIds);
+    setUploadingToCloudinary(false);
+    setLogoUploadMethod('file');
+  };
+
+  const handleCreate = async (e: React.FormEvent, addAnother = false) => {
     e.preventDefault();
 
     if (isCreating) return; // Prevent double submission
@@ -497,38 +543,14 @@ export default function CouponsPage() {
       }
 
       if (result.success) {
-        alert('Coupon created successfully!');
         fetchCoupons();
-        setShowForm(false);
-        setFormData({
-          code: '',
-          storeName: '',
-          discount: 0,
-          discountType: 'percentage',
-          description: '',
-          url: '',
-          isActive: true,
-          maxUses: 100,
-          currentUses: 0,
-          expiryDate: null,
-          isPopular: false,
-          layoutPosition: null,
-          isLatest: false,
-          latestLayoutPosition: null,
-          categoryId: null,
-          couponType: 'code',
-          getCodeText: '',
-          getDealText: '',
-        });
-        setLogoFile(null);
-        setLogoPreview(null);
-        setLogoUrl('');
-        setExtractedLogoUrl(null);
-        setCouponUrl('');
-        setFileInputKey(prev => prev + 1);
-        setSelectedStoreIds([]); // Reset selected stores
-        setUploadingToCloudinary(false); // Reset upload state
-        setLogoUploadMethod('file'); // Reset to file method
+        if (addAnother) {
+          resetCouponForm(true);
+          alert('Coupon created! You can add another below.');
+        } else {
+          setShowForm(false);
+          resetCouponForm(false);
+        }
       } else {
         // Show error message
         const errorMessage = result.error instanceof Error
@@ -719,6 +741,25 @@ export default function CouponsPage() {
     fetchCoupons();
   };
 
+  const handleDeleteAll = async () => {
+    if (!confirm('Delete ALL coupons? This cannot be undone.')) return;
+    if (!confirm('This will permanently remove every coupon. Are you absolutely sure?')) return;
+
+    try {
+      const response = await fetch('/api/coupons/delete-all', { method: 'POST' });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        alert(`Successfully deleted ${result.count ?? 'all'} coupons.`);
+        fetchCoupons();
+      } else {
+        alert(`Failed to delete coupons: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting all coupons:', error);
+      alert('Failed to delete coupons. Check console for details.');
+    }
+  };
+
   // Reset to first page when search query changes
   useEffect(() => {
     setCurrentPage(1);
@@ -743,6 +784,12 @@ export default function CouponsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Manage Coupons</h1>
         <div className="flex gap-2">
+          <button
+            onClick={handleDeleteAll}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition whitespace-nowrap"
+          >
+            Delete All
+          </button>
           <button
             onClick={() => {
               setUploadPreviewRows([]);
@@ -1467,6 +1514,25 @@ export default function CouponsPage() {
             </div>
 
             <div>
+              <label htmlFor="expiryDate" className="block text-gray-700 text-sm font-semibold mb-2">
+                Expiry Date
+              </label>
+              <input
+                id="expiryDate"
+                name="expiryDate"
+                type="date"
+                value={formData.expiryDate ? String(formData.expiryDate).split('T')[0] : ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    expiryDate: e.target.value ? e.target.value : null,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
               <label htmlFor="url" className="block text-gray-700 text-sm font-semibold mb-2">
                 Coupon URL (Where user should be redirected when clicking "Get Deal")
               </label>
@@ -1660,23 +1726,33 @@ export default function CouponsPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isCreating}
-              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isCreating ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creating...
-                </>
-              ) : (
-                'Create Coupon'
-              )}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isCreating ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating...
+                  </>
+                ) : (
+                  'Create Coupon'
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={isCreating}
+                onClick={(e) => handleCreate(e as unknown as React.FormEvent, true)}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Another
+              </button>
+            </div>
           </form>
         </div>
       )}

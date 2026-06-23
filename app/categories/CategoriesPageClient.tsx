@@ -1,58 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getBannerByLayoutPosition, Banner } from '@/lib/services/bannerService';
 import Navbar from '@/app/components/Navbar';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
 import CategoriesGrid from '@/app/components/CategoriesGrid';
 import Newsletter from '@/app/components/Newsletter';
 import Footer from '@/app/components/Footer';
 
+const CATEGORIES_BANNER = '/banners/categories-banner-1.webp';
+
 export default function CategoriesPage() {
-  const [banner, setBanner] = useState<Banner | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchBanner = async () => {
-      setLoading(true);
-      try {
-        const data = await getBannerByLayoutPosition(6);
-        setBanner(data);
-      } catch (error) {
-        console.error('Error fetching categories banner:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBanner();
-  }, []);
-
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      {/* Banner Section with Layout 6 - 1728x547 */}
-      <div className="w-full">
-        {loading ? (
-          <div className="w-full bg-gray-100 aspect-[1728/547] animate-pulse"></div>
-        ) : banner ? (
-          <div className="relative w-full">
-            <div className="w-full aspect-[1728/547]">
-              <img
-                src={banner.imageUrl}
-                alt={banner.title || 'Categories'}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  console.error('Categories banner image failed to load:', banner.imageUrl);
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="w-full aspect-[1728/547] bg-[#FFFBF0]"></div>
-        )}
+      <div className="w-full overflow-hidden bg-[#FFFBF0]">
+        <div className="relative w-full min-h-[200px] sm:min-h-[240px] md:min-h-[280px] aspect-[4/3] sm:aspect-[1728/547]">
+          <img
+            src={CATEGORIES_BANNER}
+            alt="Browse all categories — coupons and deals"
+            className="absolute inset-0 w-full h-full object-cover object-left sm:object-center"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
       </div>
 
       {/* Breadcrumbs */}

@@ -1,12 +1,6 @@
 -- Add new columns to stores table for Excel bulk upload support
 -- Run this in Supabase SQL Editor
 
--- Add merchant_id column
-ALTER TABLE stores ADD COLUMN IF NOT EXISTS merchant_id TEXT;
-
--- Add network_id column  
-ALTER TABLE stores ADD COLUMN IF NOT EXISTS network_id TEXT;
-
 -- Add website_url column (if not exists)
 ALTER TABLE stores ADD COLUMN IF NOT EXISTS website_url TEXT;
 
@@ -20,8 +14,6 @@ ALTER TABLE stores ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'US';
 ALTER TABLE stores ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
 
 -- Create indexes for faster lookups
-CREATE INDEX IF NOT EXISTS idx_stores_merchant_id ON stores(merchant_id);
-CREATE INDEX IF NOT EXISTS idx_stores_network_id ON stores(network_id);
 CREATE INDEX IF NOT EXISTS idx_stores_country ON stores(country);
 CREATE INDEX IF NOT EXISTS idx_stores_status ON stores(status);
 

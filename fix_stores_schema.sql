@@ -41,24 +41,6 @@ BEGIN
     RAISE NOTICE 'Renamed logo_url to store_logo_url';
   END IF;
 
-  -- Add merchant_id if missing
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'stores' AND column_name = 'merchant_id'
-  ) THEN
-    ALTER TABLE stores ADD COLUMN merchant_id TEXT;
-    RAISE NOTICE 'Added merchant_id column';
-  END IF;
-
-  -- Add network_id if missing
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'stores' AND column_name = 'network_id'
-  ) THEN
-    ALTER TABLE stores ADD COLUMN network_id TEXT;
-    RAISE NOTICE 'Added network_id column';
-  END IF;
-
   -- Add tracking_link if missing
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns 

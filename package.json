@@ -11,6 +11,7 @@
     "migrate:schema": "node scripts/apply-schema.mjs",
     "migrate:data": "node scripts/migrate-supabase.mjs",
     "migrate:check": "node scripts/migrate-supabase.mjs --check",
+    "db:drop-merchant-network": "node scripts/drop-merchant-network.mjs",
     "seed": "node scripts/seed-sample-data.mjs"
   },
   "dependencies": {

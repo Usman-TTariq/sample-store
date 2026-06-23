@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getCategories, Category } from "@/lib/services/categoryService";
 import { getTrendingStores, getStores, Store } from "@/lib/services/storeService";
@@ -56,6 +56,8 @@ export default function Navbar() {
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileNavRef = useRef<HTMLDivElement>(null);
+  const [mobileNavHeight, setMobileNavHeight] = useState(0);
 
   // Data State
   const [categories, setCategories] = useState<Category[]>([]);
@@ -117,6 +119,28 @@ export default function Navbar() {
       clearInterval(interval);
     };
   }, []);
+
+  useEffect(() => {
+    const measure = () => {
+      if (mobileNavRef.current) {
+        setMobileNavHeight(mobileNavRef.current.offsetHeight);
+      }
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   const updateCounts = () => {
     setFavoritesCount(getFavoritesCount());
@@ -275,9 +299,9 @@ export default function Navbar() {
 
   return (
     <>
-
-      {/* 1. TOP BAR */}
-      <div className="bg-gradient-to-br from-[#111111] to-black text-white text-[11px] py-2 border-b border-gray-700/50 relative z-50 font-sans">
+      <div ref={mobileNavRef} className="relative z-[120]">
+      {/* 1. TOP BAR — desktop/tablet only */}
+      <div className="hidden md:block bg-gradient-to-br from-[#111111] to-black text-white text-[11px] py-2 border-b border-gray-700/50 font-sans">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-full">
           <div className="hidden md:flex items-center gap-5 opacity-90">
             <Link href="/stores" className="flex items-center gap-1.5 hover:text-[#FFD23F] transition-colors">
@@ -308,7 +332,7 @@ export default function Navbar() {
       </div>
 
       {/* 2. MIDDLE BAR */}
-      <div className="bg-gradient-to-br from-[#111111] to-black py-2 border-b border-gray-700/50 relative z-[110] font-sans text-white">
+      <div className="bg-gradient-to-br from-[#111111] to-black py-2.5 sm:py-2 border-b border-gray-700/50 font-sans text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4 lg:gap-8">
 
@@ -447,14 +471,21 @@ export default function Navbar() {
                   {favoritesCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#FFD23F] rounded-full"></span>}
                 </Link>
                 <Link href="/profile" className="hover:text-[#FFD23F] transition-colors text-white"><User className="w-5 h-5" /></Link>
-                <button className="lg:hidden p-1 ml-1 text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>{mobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}</button>
+                <button
+                  type="button"
+                  aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+                  className="lg:hidden p-1.5 ml-1 text-white rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD23F]"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                  {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. BOTTOM BAR (Sticky) */}
+      {/* 3. BOTTOM BAR (Sticky) — desktop only */}
       <div className={`w-full bg-white border-b border-gray-200 hidden lg:block sticky top-0 z-[100] transition-shadow duration-300 ${isScrolled ? "shadow-md" : ""}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
@@ -484,27 +515,47 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+      </div>
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="lg:hidden fixed inset-x-0 top-[140px] z-50 bg-gradient-to-br from-[#111111] to-black border-t border-gray-700/50 shadow-xl overflow-hidden">
-            <div className="px-4 py-6 space-y-4 max-h-[80vh] overflow-y-auto text-white">
-              <div className="mb-6">
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 z-[115] bg-black/50 border-0 p-0 cursor-default"
+              style={{ top: mobileNavHeight }}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden fixed inset-x-0 z-[120] bg-gradient-to-br from-[#111111] to-black border-t border-gray-700/50 shadow-xl"
+              style={{ top: mobileNavHeight, maxHeight: `calc(100vh - ${mobileNavHeight}px)` }}
+            >
+            <div className="px-5 py-5 space-y-1 overflow-y-auto text-white" style={{ maxHeight: `calc(100vh - ${mobileNavHeight}px)` }}>
+              <div className="mb-5">
                 <form onSubmit={handleSearch} className="flex w-full bg-white/10 rounded-full p-1 border border-gray-700/50">
-                  <input type="text" placeholder="Search products..." className="flex-1 px-4 py-2 bg-transparent outline-none text-white placeholder:text-gray-400 text-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                  <button type="submit" className="bg-[#FFD23F] hover:bg-black hover:text-white p-2 rounded-full text-black transition-colors"><Search className="w-4 h-4" /></button>
+                  <input type="text" placeholder="Search stores or coupons..." className="flex-1 min-w-0 px-4 py-2.5 bg-transparent outline-none text-white placeholder:text-gray-400 text-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                  <button type="submit" aria-label="Search" className="shrink-0 bg-[#FFD23F] hover:bg-black hover:text-white p-2.5 rounded-full text-black transition-colors"><Search className="w-4 h-4" /></button>
                 </form>
               </div>
               {navLinks.map((link) => (
-                <Link key={link.name} href={link.path} onClick={() => setMobileMenuOpen(false)} className="block py-2 border-b border-gray-700/50 font-medium text-sm text-gray-300 hover:text-[#FFD23F]">{link.name}</Link>
+                <Link key={link.name} href={link.path} onClick={() => setMobileMenuOpen(false)} className="block py-3 border-b border-gray-700/50 font-medium text-base text-gray-200 hover:text-[#FFD23F]">{link.name}</Link>
               ))}
-              <div className="pt-2 flex flex-col gap-2">
-                <Link href="/submit-coupon" onClick={() => setMobileMenuOpen(false)} className="py-2 text-xs text-gray-400 hover:text-[#FFD23F]">Submit Coupon</Link>
-                <Link href="/support" onClick={() => setMobileMenuOpen(false)} className="py-2 text-xs text-gray-400 hover:text-[#FFD23F]">Support & FAQs</Link>
+              <div className="pt-4 flex flex-col gap-1">
+                <Link href="/submit-coupon" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-sm text-gray-400 hover:text-[#FFD23F]">Submit Coupon</Link>
+                <Link href="/support" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-sm text-gray-400 hover:text-[#FFD23F]">Support & FAQs</Link>
               </div>
             </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

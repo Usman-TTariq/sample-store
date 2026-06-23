@@ -65,14 +65,22 @@ export default function TrustedPartners() {
   return (
     <section className="bg-gradient-to-r from-white via-[#FFFBF0] to-white py-7 border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4">
-          <div className="shrink-0">
-            <h2 className="text-sm font-black text-gray-900 whitespace-nowrap">Cash Back Stores</h2>
-            <p className="text-[10px] text-gray-500">Earn while you shop</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex items-start justify-between gap-3 sm:block sm:shrink-0">
+            <div>
+              <h2 className="text-sm font-black text-gray-900">Cash Back Stores</h2>
+              <p className="text-[10px] text-gray-500">Earn while you shop</p>
+            </div>
+            <Link
+              href="/stores"
+              className="text-sm font-bold text-[#1D63FF] hover:underline whitespace-nowrap shrink-0 sm:hidden pt-0.5"
+            >
+              All stores →
+            </Link>
           </div>
 
-          <div className="flex-1 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-3 pb-1">
+          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex gap-3 pb-1 pr-1">
               {loading
                 ? [...Array(10)].map((_, i) => (
                     <div key={i} className="w-[72px] h-16 rounded-xl bg-gray-100 animate-pulse shrink-0" />
@@ -81,7 +89,7 @@ export default function TrustedPartners() {
                     <Link
                       key={item.id}
                       href={item.href}
-                      className="w-[72px] shrink-0 flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border border-gray-200 bg-white hover:border-[#1D63FF] hover:shadow-md hover:-translate-y-0.5 transition-all"
+                      className="w-[72px] shrink-0 flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border border-gray-200 bg-white hover:border-[#1D63FF] hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D63FF]"
                     >
                       <StoreLogo
                         name={item.name}
@@ -101,7 +109,7 @@ export default function TrustedPartners() {
 
           <Link
             href="/stores"
-            className="text-sm font-bold text-[#1D63FF] hover:underline whitespace-nowrap shrink-0"
+            className="hidden sm:inline text-sm font-bold text-[#1D63FF] hover:underline whitespace-nowrap shrink-0"
           >
             All stores →
           </Link>

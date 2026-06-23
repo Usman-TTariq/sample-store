@@ -32,9 +32,28 @@ function guessDomainFromName(name?: string): string | null {
     walmart: 'walmart.com',
     adidas: 'adidas.com',
     apple: 'apple.com',
+    costco: 'costco.com',
+    ikea: 'ikea.com',
+    ulta: 'ulta.com',
+    wayfair: 'wayfair.com',
+    chewy: 'chewy.com',
+    sephora: 'sephora.com',
+    doordash: 'doordash.com',
+    airbnb: 'airbnb.com',
+    zara: 'zara.com',
+    shein: 'shein.com',
   };
   const key = name.toLowerCase().trim();
   return known[key] ?? null;
+}
+
+function googleFavicon(domain: string, size = 128): string {
+  return `https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${domain}&size=${size}`;
+}
+
+function avatarFallback(name: string): string {
+  const label = encodeURIComponent(name.trim().slice(0, 2).toUpperCase() || '?');
+  return `https://ui-avatars.com/api/?name=${label}&background=FFD23F&color=111111&bold=true&size=128`;
 }
 
 /** Ordered fallback URLs — component tries each on error */
@@ -46,19 +65,20 @@ export function getStoreLogoCandidates(
 ): string[] {
   const domain = getStoreDomain(websiteUrl, trackingLink, storeName);
   const candidates: string[] = [];
+  const raw = logoUrl?.trim();
+  const isFavicon =
+    !!raw &&
+    (raw.includes('google.com/s2/favicons') ||
+      raw.includes('gstatic.com/faviconV2') ||
+      raw.includes('duckduckgo.com/ip3'));
 
-  if (logoUrl?.trim()) candidates.push(logoUrl.trim());
+  if (raw && !isFavicon) candidates.push(raw);
   if (domain) {
-    candidates.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=256`);
+    candidates.push(googleFavicon(domain, 128));
     candidates.push(`https://icons.duckduckgo.com/ip3/${domain}.ico`);
-    candidates.push(`https://logo.clearbit.com/${domain}`);
   }
-  if (storeName) {
-    const label = encodeURIComponent(storeName.slice(0, 2).toUpperCase());
-    candidates.push(
-      `https://ui-avatars.com/api/?name=${label}&background=FFD23F&color=111111&bold=true&size=128`
-    );
-  }
+  if (raw && isFavicon) candidates.push(raw);
+  if (storeName) candidates.push(avatarFallback(storeName));
 
   return [...new Set(candidates)];
 }

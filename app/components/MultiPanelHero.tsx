@@ -99,12 +99,12 @@ export default function MultiPanelHero({ initialBanners }: { initialBanners?: (B
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.45 }}
-              className="sm:flex-1 relative rounded-2xl overflow-hidden min-h-[200px] sm:min-h-full shadow-xl group"
+              className="sm:flex-1 relative rounded-2xl overflow-hidden min-h-[220px] sm:min-h-full shadow-xl group"
             >
               <img
                 src={getImage(banners[slide.imageIndices[0]], slide.imageIndices[0])}
                 alt="Featured deals"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="absolute inset-0 w-full h-full object-cover object-top sm:object-center transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
               <div className="absolute bottom-4 left-4 right-4">
@@ -113,22 +113,23 @@ export default function MultiPanelHero({ initialBanners }: { initialBanners?: (B
               </div>
             </motion.div>
 
-            <div className="sm:flex-1 grid grid-cols-2 gap-3">
+            <div className="sm:flex-1 grid grid-cols-2 gap-3 sm:gap-2 lg:gap-3">
               {CATEGORY_CARDS.map((cat) => (
                 <Link
                   key={cat.name}
                   href={cat.href}
-                  className="relative rounded-xl overflow-hidden group min-h-[90px] sm:min-h-0 shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
+                  className="relative rounded-xl overflow-hidden group aspect-[4/3] sm:aspect-square shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
                 >
                   <img
                     src={cat.image}
                     alt={cat.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    style={{ objectPosition: cat.objectPosition }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute bottom-2 left-2 right-2">
-                    <span className="text-lg leading-none">{cat.emoji}</span>
-                    <p className="text-white text-[11px] font-bold mt-0.5 leading-tight">{cat.name}</p>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
+                  <div className="absolute bottom-2.5 left-2.5 right-2.5 flex flex-col gap-0.5">
+                    <span className="text-base leading-none drop-shadow-sm">{cat.emoji}</span>
+                    <p className="text-white text-xs sm:text-[11px] font-bold leading-tight drop-shadow-sm">{cat.name}</p>
                   </div>
                 </Link>
               ))}

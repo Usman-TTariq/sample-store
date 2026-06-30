@@ -98,8 +98,6 @@ export async function getBannersWithLayout(): Promise<(Banner | null)[]> {
       return Array(4).fill(null)
     }
 
-    console.log('Banners fetched from database:', data)
-
     const layoutSlots: (Banner | null)[] = Array(4).fill(null)
     ;(data || []).forEach((item: any) => {
       if (item.order_index >= 1 && item.order_index <= 4) {
@@ -110,16 +108,54 @@ export async function getBannersWithLayout(): Promise<(Banner | null)[]> {
           layoutPosition: item.order_index,
           createdAt: item.created_at,
         }
-        console.log(`Setting banner at position ${item.order_index}:`, banner)
         layoutSlots[item.order_index - 1] = banner
       }
     })
 
-    console.log('Final layout slots:', layoutSlots)
     return layoutSlots
   } catch (error) {
     console.error('Error getting banners with layout:', error)
     return Array(4).fill(null)
+  }
+}
+
+export async function getPromoBannerByPriority(positions: number[]): Promise<Banner | null> {
+  if (positions.length === 0) return null
+
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('banners')
+      .select('*')
+      .eq('active', true)
+      .in('order_index', positions)
+
+    if (error) {
+      console.error('Error getting promo banner:', error)
+      return null
+    }
+
+    if (!data?.length) return null
+
+    const byPosition = new Map(data.map((item: { order_index: number }) => [item.order_index, item]))
+
+    for (const position of positions) {
+      const item = byPosition.get(position) as Record<string, unknown> | undefined
+      if (item) {
+        return {
+          id: item.id as string,
+          title: String(item.title || ''),
+          imageUrl: String(item.image_url || ''),
+          layoutPosition: item.order_index as number,
+          createdAt: item.created_at as string | undefined,
+        }
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.error('Error getting promo banner:', error)
+    return null
   }
 }
 
@@ -131,8 +167,6 @@ export async function getBannerByLayoutPosition(position: number): Promise<Banne
       console.error('Error: Supabase client not initialized')
       return null
     }
-
-    console.log(`Fetching banner at position ${position}...`)
 
     const { data, error } = await supabase
       .from('banners')
@@ -158,20 +192,16 @@ export async function getBannerByLayoutPosition(position: number): Promise<Banne
     }
 
     if (!data) {
-      console.log(`No banner found at position ${position}`)
       return null
     }
 
-    const banner: Banner = {
+    return {
       id: data.id,
       title: data.title || '',
       imageUrl: data.image_url,
       layoutPosition: data.order_index,
       createdAt: data.created_at,
     }
-
-    console.log(`✅ Banner found at position ${position}:`, banner)
-    return banner
   } catch (error) {
     console.error('Error getting banner by layout position:', error)
     return null

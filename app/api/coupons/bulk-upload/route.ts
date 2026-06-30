@@ -1,4 +1,5 @@
 import { supabaseServer } from '@/lib/supabase/server';
+import { resolveCouponExpiryDate } from '@/lib/utils/couponExpiry';
 
 function slugify(name: string): string {
   return name
@@ -12,7 +13,7 @@ function slugify(name: string): string {
 async function autoCreateStore(
   supabase: ReturnType<typeof supabaseServer>,
   storeName: string,
-  websiteUrl?: string | null,
+  linkUrl?: string | null,
   logoUrl?: string | null,
   existingSlugs?: Set<string>
 ): Promise<{ id: string; slug: string } | null> {
@@ -28,12 +29,15 @@ async function autoCreateStore(
     suffix += 1;
   }
 
+  const trimmedLink = linkUrl?.trim() || null;
+
   const { data, error } = await supabase
     .from('stores')
     .insert({
       store_name: storeName,
       slug: uniqueSlug,
-      website_url: websiteUrl?.trim() || null,
+      website_url: trimmedLink,
+      tracking_link: trimmedLink,
       store_logo_url: logoUrl?.trim() || null,
       status: 'active',
       country: 'US',
@@ -83,6 +87,7 @@ interface StoreLookup {
   name: string;
   slug?: string;
   websiteUrl?: string;
+  trackingLink?: string;
 }
 
 function loadStoresFromDb(raw: Record<string, unknown>[]): StoreLookup[] {
@@ -92,6 +97,7 @@ function loadStoresFromDb(raw: Record<string, unknown>[]): StoreLookup[] {
     name: String(item.store_name || ''),
     slug: item.slug ? String(item.slug) : undefined,
     websiteUrl: item.website_url ? String(item.website_url) : undefined,
+    trackingLink: item.tracking_link ? String(item.tracking_link) : undefined,
   }));
 }
 
@@ -185,11 +191,11 @@ function mapCouponRow(
     store_id: storeUuid,
     discount_value: row.discount ?? 0,
     discount_type: row.discountType || 'percentage',
-    description: row.description?.trim() || title,
+    description: row.description?.trim() || '',
     status: row.isActive !== false ? 'active' : 'inactive',
     max_uses: row.maxUses ?? 0,
     current_uses: row.currentUses ?? 0,
-    expiry_date: row.expiryDate || null,
+    expiry_date: resolveCouponExpiryDate(row.expiryDate),
     logo_url: row.logoUrl || null,
     url: row.url || null,
     coupon_type: row.couponType || 'code',
@@ -221,7 +227,7 @@ export async function POST(req: Request) {
 
     const { data: storeData, error: storeError } = await supabase
       .from('stores')
-      .select('id, store_id, store_name, slug, website_url');
+      .select('id, store_id, store_name, slug, website_url, tracking_link');
 
     if (storeError) {
       console.error('Failed to load stores for coupon bulk upload:', storeError);
@@ -300,10 +306,31 @@ export async function POST(req: Request) {
                 name: nameForCreate,
                 slug: created.slug,
                 websiteUrl: row.url?.trim() || undefined,
+                trackingLink: row.url?.trim() || undefined,
               });
               storeNames.push(nameForCreate);
               storesCreated += 1;
             }
+          }
+        }
+      }
+
+      if (resolved && row.url?.trim()) {
+        const storeRow = storesList.find((s) => s.id === resolved!.uuid);
+        if (storeRow && !storeRow.trackingLink?.trim()) {
+          const link = row.url.trim();
+          const { error: linkError } = await supabase
+            .from('stores')
+            .update({
+              tracking_link: link,
+              website_url: storeRow.websiteUrl?.trim() || link,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', resolved.uuid);
+
+          if (!linkError) {
+            storeRow.trackingLink = link;
+            if (!storeRow.websiteUrl?.trim()) storeRow.websiteUrl = link;
           }
         }
       }

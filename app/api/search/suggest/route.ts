@@ -1,4 +1,5 @@
 import { supabaseServer } from '@/lib/supabase/server';
+import { buildIlikeOrFilter, escapeIlike } from '@/lib/utils/searchQuery';
 import {
   filterCategoriesForSearch,
   filterCouponsForSearch,
@@ -77,19 +78,19 @@ export async function GET(req: Request) {
     }
 
     const supabase = supabaseServer();
-    const pattern = `%${query}%`;
+    const pattern = `%${escapeIlike(query)}%`;
 
     const [storesRes, couponsRes, categoriesRes] = await Promise.all([
       supabase
         .from('stores')
         .select('*')
-        .or(`store_name.ilike.${pattern},slug.ilike.${pattern},description.ilike.${pattern}`)
+        .or(buildIlikeOrFilter(['store_name', 'slug', 'description'], query))
         .limit(20),
       supabase
         .from('coupons')
         .select('*')
         .eq('status', 'active')
-        .or(`store_name.ilike.${pattern},code.ilike.${pattern},description.ilike.${pattern}`)
+        .or(buildIlikeOrFilter(['store_name', 'code', 'description'], query))
         .limit(30),
       supabase
         .from('categories')

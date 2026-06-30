@@ -160,7 +160,7 @@ const ARTICLES = [
 
 function articleContent(title, excerpt) {
   return `<p>${excerpt}</p>
-<p>At Sample Store, we test deals and write guides so you spend less on the things you already buy. This article is part of our ongoing savings series.</p>
+<p>At SaveKlick, we test deals and write guides so you spend less on the things you already buy. This article is part of our ongoing savings series.</p>
 <p><strong>Key takeaways:</strong></p>
 <ul>
 <li>Compare prices across at least two retailers before checkout.</li>

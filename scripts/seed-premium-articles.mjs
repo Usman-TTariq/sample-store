@@ -64,7 +64,7 @@ const ARTICLES = [
 <h2>Step 1: Start with a cashback portal</h2>
 <p>Always click through Rakuten, TopCashback, or a similar portal before you land on the retailer site. This layer is separate from store coupons and stacks with almost everything.</p>
 <h2>Step 2: Apply the best public code</h2>
-<p>Search Sample Store or your favorite deal site for the highest-percentage code. Test one code at a time — most carts reject multiple promo fields.</p>
+<p>Search SaveKlick or your favorite deal site for the highest-percentage code. Test one code at a time — most carts reject multiple promo fields.</p>
 <h2>Step 3: Pay with a rewards card</h2>
 <p>Category bonuses on groceries, travel, or online shopping add 3–5% on top. Stack a quarterly 5% rotating category when it matches the merchant.</p>
 <h2>Stores that stack well</h2>

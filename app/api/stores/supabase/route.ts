@@ -3,7 +3,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 interface SupabaseStoreRow {
   store_id?: string | number;
   store_name: string;
-  description: string;
+  description?: string | null;
   store_logo_url?: string | null;
   isTrending?: boolean | null;
   seoTitle?: string | null;
@@ -38,7 +38,7 @@ export async function GET() {
       name: row.store_name || row.name || '',
       subStoreName: row.subStoreName || row.sub_store_name || undefined,
       slug: row.slug || undefined,
-      description: row.description || '',
+      description: row.description?.trim() || undefined,
       logoUrl: row.store_logo_url || row.logo_url || undefined,
       seoTitle: row.seoTitle || row.seo_title || undefined,
       seoDescription: row.seoDescription || row.seo_description || undefined,

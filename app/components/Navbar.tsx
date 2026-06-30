@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getCategories, Category } from "@/lib/services/categoryService";
 import { getTrendingStores, getStores, Store } from "@/lib/services/storeService";
 import { getFavoritesCount } from "@/lib/services/favoritesService";
 import { getUnreadCount, initializeSampleNotifications } from "@/lib/services/notificationsService";
 import { siteConfig } from "@/lib/seo/config";
+import SiteLogoText from "@/app/components/SiteLogoText";
+import SearchSuggestionsDropdown from "@/app/components/SearchSuggestionsDropdown";
+import { useSearchSuggestions } from "@/lib/hooks/useSearchSuggestions";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   Search, Menu, X, ChevronDown, User,
@@ -51,10 +54,23 @@ const getStoreFaviconUrl = (store: Store): string => {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 };
 
-export default function Navbar() {
+type NavbarProps = {
+  /** `home` = hide white bottom nav. `full` = complete store navbar (promotions, stores, etc.). */
+  variant?: 'home' | 'full';
+};
+
+function isNavLinkActive(pathname: string, path: string): boolean {
+  if (path === '/') return pathname === '/';
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
+export default function Navbar({ variant = 'full' }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isScrolled, setIsScrolled] = useState(false);
+  const mainHeaderRef = useRef<HTMLDivElement>(null);
+  const bottomBarRef = useRef<HTMLDivElement>(null);
+  const [isBottomBarPinned, setIsBottomBarPinned] = useState(false);
+  const [bottomBarHeight, setBottomBarHeight] = useState(56);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileNavRef = useRef<HTMLDivElement>(null);
   const [mobileNavHeight, setMobileNavHeight] = useState(0);
@@ -69,18 +85,50 @@ export default function Navbar() {
   const [promoIndex, setPromoIndex] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [searchResults, setSearchResults] = useState<{
-    stores: Store[];
-    categories: Category[];
-  }>({ stores: [], categories: [] });
 
   const { scrollY } = useScroll();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    // Height of TopBar (~40px) + MiddleBar (~90px) = ~130px
-    // We show shadow right as it sticks
-    setIsScrolled(latest > 120);
+    if (variant !== 'full') return;
+    const header = mainHeaderRef.current;
+    if (header) {
+      setIsBottomBarPinned(header.getBoundingClientRect().bottom <= 0);
+    } else {
+      setIsBottomBarPinned(latest > 120);
+    }
   });
+
+  useLayoutEffect(() => {
+    if (variant !== 'full') return;
+    const bar = bottomBarRef.current;
+    if (!bar) return;
+
+    const updateHeight = () => setBottomBarHeight(bar.getBoundingClientRect().height);
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [variant]);
+
+  useEffect(() => {
+    if (variant !== 'full') return;
+
+    const header = mainHeaderRef.current;
+    if (!header) return;
+
+    const onScroll = () => {
+      setIsBottomBarPinned(header.getBoundingClientRect().bottom <= 0);
+    };
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [variant]);
 
   const promotions = [
     "Get 35% Off Code FG6556KD",
@@ -142,58 +190,31 @@ export default function Navbar() {
     };
   }, [mobileMenuOpen]);
 
+  useEffect(() => {
+    if (pathname === '/search' && typeof window !== 'undefined') {
+      const q = new URLSearchParams(window.location.search).get('q') || '';
+      setSearchQuery(q);
+    }
+  }, [pathname]);
+
   const updateCounts = () => {
     setFavoritesCount(getFavoritesCount());
     setNotificationsCount(getUnreadCount());
   };
 
+  const { results: searchResults, loading: searchLoading } = useSearchSuggestions(searchQuery);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowSuggestions(false);
+    setMobileMenuOpen(false);
     const query = searchQuery.trim();
-    if (query) {
-      setShowSuggestions(false);
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-    }
+    router.push(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
   };
 
-  // Handle search input change and filter results
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-
-    if (value.trim().length > 0) {
-      const searchTerm = value.toLowerCase().trim();
-
-      // Filter stores
-      const filteredStores = trendingStores.filter(store =>
-        store.name.toLowerCase().includes(searchTerm)
-      ).slice(0, 5);
-
-      // Filter categories
-      const filteredCategories = categories.filter(cat =>
-        cat.name.toLowerCase().includes(searchTerm)
-      ).slice(0, 3);
-
-      setSearchResults({
-        stores: filteredStores,
-        categories: filteredCategories
-      });
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
-      setSearchResults({ stores: [], categories: [] });
-    }
-  };
-
-  const handleSuggestionClick = (type: 'store' | 'category', item: Store | Category) => {
-    setShowSuggestions(false);
-    if (type === 'store') {
-      const store = item as Store;
-      router.push(`/stores/${store.slug || store.id}`);
-    } else {
-      const category = item as Category;
-      router.push(`/categories/${category.id}`);
-    }
-    setSearchQuery('');
+    setShowSuggestions(value.trim().length > 0);
   };
 
   // --- Dropdown Components ---
@@ -278,6 +299,7 @@ export default function Navbar() {
     { name: "Home", path: "/", component: null },
     { name: "Stores", path: "/stores", component: <StoresMenu /> },
     { name: "Categories", path: "/categories", component: <CategoriesMenu /> },
+    { name: "Promotions", path: "/promotions", component: null },
     {
       name: "Pages",
       path: "/pages",
@@ -287,18 +309,12 @@ export default function Navbar() {
         { label: "Privacy Policy", href: "/privacy-policy" }
       ]} />
     },
-    {
-      name: "Blogs",
-      path: "/blogs",
-      component: <SimpleMenu items={[
-        { label: "Latest News", href: "/blogs" },
-      ]} />
-    },
   ];
 
   return (
     <>
       <div ref={mobileNavRef} className="relative z-[120]">
+      <div ref={mainHeaderRef} id="navbar-main-header">
       {/* 1. TOP BAR — desktop/tablet only */}
       <div className="hidden md:block bg-gradient-to-br from-[#111111] to-black text-white text-[11px] py-2 border-b border-gray-700/50 font-sans">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-full">
@@ -341,118 +357,38 @@ export default function Navbar() {
                 alt={`${siteConfig.name} Icon`}
                 className="w-10 h-10 object-contain"
               />
-              <span className="text-2xl font-bold tracking-tight leading-none">
-                <span className="text-white">Sample</span>
-                <span className="text-[#FFD23F]">Store</span>
-              </span>
+              <SiteLogoText />
             </Link>
 
 
             <div className="hidden lg:flex flex-1 max-w-2xl mx-auto relative">
-              <form onSubmit={handleSearch} className="flex w-full bg-white rounded-full p-1 shadow-lg items-center relative z-20 h-[46px]">
+              <form action="/search" method="get" onSubmit={handleSearch} className="flex w-full bg-white rounded-full p-1 shadow-lg items-center relative z-20 h-[46px]">
                 <div className="pl-4 pr-2 flex items-center">
                   <Search className="w-4 h-4 text-gray-400" />
                 </div>
                 <input
-                  type="text"
+                  type="search"
+                  name="q"
                   placeholder="Search for stores, coupons, categories..."
                   className="flex-1 px-2 py-1 bg-transparent outline-none text-gray-800 placeholder:text-gray-400 text-sm font-medium"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onFocus={() => searchQuery.trim().length > 0 && setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  autoComplete="off"
                 />
                 <button type="submit" className="mr-1 bg-[#FFD23F] text-black px-6 py-2 rounded-full font-bold text-xs hover:bg-black hover:text-white transition-all hover:shadow-md">
                   Search
                 </button>
               </form>
 
-              {/* Search Suggestions Dropdown */}
-              {showSuggestions && (searchResults.stores.length > 0 || searchResults.categories.length > 0) && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-[150] max-h-96 overflow-y-auto">
-                  {/* Stores Section */}
-                  {searchResults.stores.length > 0 && (
-                    <div className="p-2">
-                      <div className="px-3 py-2 text-xs font-bold text-gray-500 uppercase tracking-wide">Stores</div>
-                      {searchResults.stores.map((store) => (
-                        <button
-                          key={store.id}
-                          onClick={() => handleSuggestionClick('store', store)}
-                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
-                        >
-                          <div className="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
-                            <img
-                              src={store.logoUrl || getStoreFaviconUrl(store)}
-                              alt={store.name}
-                              className="w-8 h-8 object-contain"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                const faviconUrl = getStoreFaviconUrl(store);
-                                if (target.src !== faviconUrl && store.logoUrl) {
-                                  target.src = faviconUrl;
-                                } else {
-                                  target.style.display = 'none';
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    parent.innerHTML = `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#FFD23F] to-[#FFE566] flex items-center justify-center text-black text-sm font-bold">${store.name.charAt(0).toUpperCase()}</div>`;
-                                  }
-                                }
-                              }}
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm text-gray-900 truncate">{store.name}</div>
-                            {store.description && (
-                              <div className="text-xs text-gray-500 truncate">{store.description}</div>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Categories Section */}
-                  {searchResults.categories.length > 0 && (
-                    <div className="p-2 border-t border-gray-100">
-                      <div className="px-3 py-2 text-xs font-bold text-gray-500 uppercase tracking-wide">Categories</div>
-                      {searchResults.categories.map((category) => (
-                        <button
-                          key={category.id}
-                          onClick={() => handleSuggestionClick('category', category)}
-                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
-                        >
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                            style={{ backgroundColor: category.backgroundColor || '#ccc' }}
-                          >
-                            {category.logoUrl ? (
-                              <img src={category.logoUrl} className="w-6 h-6 object-contain" alt={category.name} />
-                            ) : (
-                              category.name.charAt(0)
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm text-gray-900 truncate">{category.name}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* View All Results */}
-                  <div className="p-2 border-t border-gray-100">
-                    <button
-                      onClick={() => {
-                        setShowSuggestions(false);
-                        handleSearch({ preventDefault: () => { } } as React.FormEvent);
-                      }}
-                      className="w-full px-3 py-2 text-sm font-semibold text-[#B8860B] hover:bg-[#FFFBF0] rounded-lg transition-colors text-center"
-                    >
-                      View all results for "{searchQuery}"
-                    </button>
-                  </div>
-                </div>
-              )}
+              <SearchSuggestionsDropdown
+                query={searchQuery}
+                results={searchResults}
+                show={showSuggestions && searchQuery.trim().length > 0}
+                loading={searchLoading}
+                onClose={() => setShowSuggestions(false)}
+              />
             </div>
 
             <div className="flex items-center gap-6 text-white">
@@ -483,18 +419,49 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+      </div>
 
-      {/* 3. BOTTOM BAR (Sticky) — desktop only */}
-      <div className={`w-full bg-white border-b border-gray-200 hidden lg:block sticky top-0 z-[100] transition-shadow duration-300 ${isScrolled ? "shadow-md" : ""}`}>
+      {/* 3. BOTTOM BAR (Sticky) — desktop only; hidden on homepage */}
+      {variant === 'full' && (
+      <>
+      <div
+        ref={bottomBarRef}
+        className={`w-full hidden lg:block z-[100] transition-colors duration-300 ${
+          isBottomBarPinned
+            ? 'fixed top-0 left-0 right-0 bg-black border-b border-gray-800 shadow-lg shadow-black/30'
+            : 'relative bg-white border-b border-gray-200'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-7">
-              {navLinks.map((link) => (
+              {navLinks.map((link) => {
+                const isActive = isNavLinkActive(pathname, link.path);
+                return (
                 <div key={link.name} className="relative group h-14 flex items-center" onMouseEnter={() => setActiveDropdown(link.name)} onMouseLeave={() => setActiveDropdown(null)}>
-                  <Link href={link.path} className={`text-[13px] font-bold flex items-center gap-1 hover:text-[#E6BC2E] transition-colors uppercase tracking-wide ${pathname === link.path ? "text-[#B8860B]" : "text-black"}`}>
+                  <Link
+                    href={link.path}
+                    className={`text-[13px] font-bold flex items-center gap-1 transition-colors uppercase tracking-wide ${
+                      isBottomBarPinned
+                        ? isActive
+                          ? 'text-[#FFD23F] hover:text-[#FFD23F]'
+                          : 'text-slate-300 hover:text-white'
+                        : isActive
+                          ? 'text-[#B8860B] hover:text-[#E6BC2E]'
+                          : 'text-black hover:text-[#E6BC2E]'
+                    }`}
+                  >
                     {link.name}
                     {link.component && (
-                      <ChevronDown className={`w-3.5 h-3.5 mt-0.5 text-gray-500 group-hover:rotate-180 transition-transform duration-300 ${activeDropdown === link.name ? 'rotate-180 text-[#B8860B]' : ''}`} />
+                      <ChevronDown className={`w-3.5 h-3.5 mt-0.5 group-hover:rotate-180 transition-transform duration-300 ${
+                        isBottomBarPinned
+                          ? activeDropdown === link.name
+                            ? 'rotate-180 text-[#FFD23F]'
+                            : 'text-slate-400 group-hover:text-white'
+                          : activeDropdown === link.name
+                            ? 'rotate-180 text-[#B8860B]'
+                            : 'text-gray-500'
+                      }`} />
                     )}
                   </Link>
                   <AnimatePresence>
@@ -505,15 +472,34 @@ export default function Navbar() {
                     )}
                   </AnimatePresence>
                 </div>
-              ))}
+              );})}
             </div>
             <div className="flex items-center gap-6">
-              <Link href="/submit-coupon" className="text-[13px] font-bold text-black hover:text-[#E6BC2E] transition-colors uppercase tracking-wide">Submit Coupon</Link>
-              <Link href="/support" className="text-[13px] font-bold text-black hover:text-[#E6BC2E] transition-colors uppercase tracking-wide">Support & FAQs</Link>
+              <Link
+                href="/submit-coupon"
+                className={`text-[13px] font-bold transition-colors uppercase tracking-wide ${
+                  isBottomBarPinned ? 'text-slate-300 hover:text-white' : 'text-black hover:text-[#E6BC2E]'
+                }`}
+              >
+                Submit Coupon
+              </Link>
+              <Link
+                href="/support"
+                className={`text-[13px] font-bold transition-colors uppercase tracking-wide ${
+                  isBottomBarPinned ? 'text-slate-300 hover:text-white' : 'text-black hover:text-[#E6BC2E]'
+                }`}
+              >
+                Support & FAQs
+              </Link>
             </div>
           </div>
         </div>
       </div>
+      {isBottomBarPinned && (
+        <div aria-hidden className="hidden lg:block w-full" style={{ height: bottomBarHeight }} />
+      )}
+      </>
+      )}
       </div>
 
       {/* Mobile Menu Overlay */}
@@ -539,11 +525,28 @@ export default function Navbar() {
               style={{ top: mobileNavHeight, maxHeight: `calc(100vh - ${mobileNavHeight}px)` }}
             >
             <div className="px-5 py-5 space-y-1 overflow-y-auto text-white" style={{ maxHeight: `calc(100vh - ${mobileNavHeight}px)` }}>
-              <div className="mb-5">
-                <form onSubmit={handleSearch} className="flex w-full bg-white/10 rounded-full p-1 border border-gray-700/50">
-                  <input type="text" placeholder="Search stores or coupons..." className="flex-1 min-w-0 px-4 py-2.5 bg-transparent outline-none text-white placeholder:text-gray-400 text-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <div className="mb-5 relative">
+                <form action="/search" method="get" onSubmit={handleSearch} className="flex w-full bg-white/10 rounded-full p-1 border border-gray-700/50">
+                  <input
+                    type="search"
+                    name="q"
+                    placeholder="Search stores or coupons..."
+                    className="flex-1 min-w-0 px-4 py-2.5 bg-transparent outline-none text-white placeholder:text-gray-400 text-sm"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    onFocus={() => searchQuery.trim() && setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    autoComplete="off"
+                  />
                   <button type="submit" aria-label="Search" className="shrink-0 bg-[#FFD23F] hover:bg-black hover:text-white p-2.5 rounded-full text-black transition-colors"><Search className="w-4 h-4" /></button>
                 </form>
+                <SearchSuggestionsDropdown
+                  query={searchQuery}
+                  results={searchResults}
+                  show={showSuggestions && searchQuery.trim().length > 0}
+                  loading={searchLoading}
+                  onClose={() => setShowSuggestions(false)}
+                />
               </div>
               {navLinks.map((link) => (
                 <Link key={link.name} href={link.path} onClick={() => setMobileMenuOpen(false)} className="block py-3 border-b border-gray-700/50 font-medium text-base text-gray-200 hover:text-[#FFD23F]">{link.name}</Link>

@@ -59,7 +59,7 @@ export function mapStoreRowToResponse(row: Record<string, unknown>) {
     name: String(row.store_name || row.name || ''),
     subStoreName: (row.subStoreName as string) || (row.sub_store_name as string) || undefined,
     slug: (row.slug as string) || undefined,
-    description: String(row.description || ''),
+    description: row.description ? String(row.description).trim() : undefined,
     logoUrl: (row.store_logo_url as string) || (row.logo_url as string) || undefined,
     websiteUrl: (row.website_url as string) || undefined,
     trackingLink: (row.tracking_link as string) || undefined,

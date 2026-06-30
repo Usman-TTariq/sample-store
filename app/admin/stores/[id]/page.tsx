@@ -178,7 +178,7 @@ export default function EditStorePage() {
       try {
         const payload = {
           store_name: updates.name,
-          description: updates.description,
+          description: updates.description?.trim() || null,
           store_logo_url: updates.logoUrl,
           subStoreName: updates.subStoreName,
           slug: updates.slug,
@@ -187,6 +187,7 @@ export default function EditStorePage() {
           isTrending: updates.isTrending,
           tracking_link: updates.trackingLink,
           country: updates.country,
+          categoryId: updates.categoryId ?? null,
         };
 
         const res = await fetch(`/api/stores/supabase/by-id/${encodeURIComponent(storeId)}`, {
@@ -443,18 +444,18 @@ export default function EditStorePage() {
 
           <div>
             <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
-              Description
+              Description <span className="font-normal text-gray-500">(Optional)</span>
             </label>
             <textarea
               id="description"
               name="description"
+              placeholder="Store description (optional)"
               value={formData.description || ''}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={4}
-              required
             />
           </div>
 

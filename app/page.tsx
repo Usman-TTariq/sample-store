@@ -4,26 +4,17 @@ import LatestPostsGrid from "./components/LatestPostsGrid";
 import MostPopularArticles from "./components/MostPopularArticles";
 import HomePromoBanner from "./components/HomePromoBanner";
 import FAQSection from "./components/FAQSection";
+import Newsletter from "./components/Newsletter";
 import Footer from "./components/Footer";
-import { getBannerByLayoutPosition } from "@/lib/services/bannerService";
+import { getPromoBannerByPriority } from "@/lib/services/bannerService";
 import Link from "next/link";
 
 export const revalidate = 0;
 
-async function resolvePromoBanner() {
-  const primary = await getBannerByLayoutPosition(5);
-  if (primary) return primary;
-
-  for (const position of [1, 2, 3, 4, 6, 7, 8, 9, 10, 11]) {
-    const banner = await getBannerByLayoutPosition(position);
-    if (banner) return banner;
-  }
-
-  return null;
-}
+const PROMO_BANNER_POSITIONS = [5, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11];
 
 export default async function Home() {
-  const promoBanner = await resolvePromoBanner();
+  const promoBanner = await getPromoBannerByPriority(PROMO_BANNER_POSITIONS);
 
   return (
     <div className="min-h-screen bg-white">
@@ -53,6 +44,7 @@ export default async function Home() {
 
       <LatestPostsGrid />
       <MostPopularArticles />
+      <Newsletter />
       <FAQSection />
       <Footer />
     </div>

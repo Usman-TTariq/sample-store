@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getNews, NewsArticle } from '@/lib/services/newsService';
 import Navbar from '@/app/components/Navbar';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
@@ -9,33 +10,37 @@ import Newsletter from '@/app/components/Newsletter';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function BlogsPage() {
+function BlogsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const qFromUrl = searchParams.get('q') || '';
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(qFromUrl);
   const [filteredArticles, setFilteredArticles] = useState<NewsArticle[]>([]);
+
+  useEffect(() => {
+    setSearchQuery(qFromUrl);
+  }, [qFromUrl]);
 
   useEffect(() => {
     const fetchArticles = async () => {
       setLoading(true);
       try {
         const data = await getNews();
-        // Sort by date (newest first) or createdAt
         const sorted = data.sort((a, b) => {
           if (a.createdAt && b.createdAt) {
-            // Handle both Firebase Timestamp and string dates
             const aTime = typeof a.createdAt === 'string'
               ? new Date(a.createdAt).getTime()
-              : (a.createdAt as any).toMillis();
+              : (a.createdAt as { toMillis?: () => number }).toMillis?.() ?? 0;
             const bTime = typeof b.createdAt === 'string'
               ? new Date(b.createdAt).getTime()
-              : (b.createdAt as any).toMillis();
+              : (b.createdAt as { toMillis?: () => number }).toMillis?.() ?? 0;
             return bTime - aTime;
           }
           return 0;
         });
         setArticles(sorted);
-        setFilteredArticles(sorted);
       } catch (error) {
         console.error('Error fetching articles:', error);
       } finally {
@@ -49,17 +54,33 @@ export default function BlogsPage() {
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredArticles(articles);
-    } else {
-      const query = searchQuery.toLowerCase();
-      const filtered = articles.filter(article =>
-        article.title.toLowerCase().includes(query) ||
-        article.description.toLowerCase().includes(query)
-      );
-      setFilteredArticles(filtered);
+      return;
     }
+
+    const query = searchQuery.toLowerCase();
+    setFilteredArticles(
+      articles.filter(
+        (article) =>
+          article.title.toLowerCase().includes(query) ||
+          article.description.toLowerCase().includes(query) ||
+          (article.content || '').toLowerCase().includes(query)
+      )
+    );
   }, [searchQuery, articles]);
 
-  const formatDate = (dateString?: string, timestamp?: any) => {
+  const handleSearchSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (q) router.push(`/blogs?q=${encodeURIComponent(q)}`);
+    else router.push('/blogs');
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    router.push('/blogs');
+  };
+
+  const formatDate = (dateString?: string, timestamp?: unknown) => {
     if (dateString) return dateString;
     if (timestamp) {
       try {
@@ -122,26 +143,34 @@ export default function BlogsPage() {
       >
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mx-auto">
+            <form onSubmit={handleSearchSubmit} className="max-w-2xl mx-auto">
             <motion.div
               whileFocus={{ scale: 1.02 }}
               className="relative"
             >
               <input
-                type="text"
+                type="search"
                 placeholder="Search articles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-3 pl-12 border-2 border-[#FFD23F]/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFD23F] focus:border-[#FFD23F] transition-all text-gray-900"
+                className="w-full px-4 py-3 pl-12 pr-24 border-2 border-[#FFD23F]/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFD23F] focus:border-[#FFD23F] transition-all text-gray-900"
               />
               <svg
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#FFD23F] hover:bg-black hover:text-white text-black text-sm font-bold px-4 py-1.5 rounded-md transition-colors"
+              >
+                Search
+              </button>
             </motion.div>
+            </form>
           </div>
         </div>
       </motion.div>
@@ -192,7 +221,7 @@ export default function BlogsPage() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setSearchQuery('')}
+                  onClick={clearSearch}
                   className="bg-[#FFD23F] hover:bg-black hover:text-white text-black font-semibold px-6 py-3 rounded-lg transition-colors"
                 >
                   Clear Search
@@ -349,6 +378,14 @@ export default function BlogsPage() {
       {/* Footer */}
       <Footer />
     </div>
+  );
+}
+
+export default function BlogsPageClient() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <BlogsPageContent />
+    </Suspense>
   );
 }
 

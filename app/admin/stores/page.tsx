@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   getStores,
   createStore,
@@ -16,6 +17,8 @@ import { createClient } from '@/lib/supabase/client';
 import { getCategoryEmoji } from '@/lib/utils/categoryIcon';
 
 export default function StoresPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [stores, setStores] = useState<Store[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -266,10 +269,11 @@ export default function StoresPage() {
         // Skip empty rows
         if (!store_name.trim()) return null;
 
-        // Generate description from store name if not provided
-        const description = idxDescription !== -1 && row[idxDescription]
-          ? row[idxDescription]
-          : `Get the best deals and coupons from ${store_name}`;
+        // Description is optional
+        const description =
+          idxDescription !== -1 && row[idxDescription]?.trim()
+            ? row[idxDescription].trim()
+            : null;
 
         const logoUrl = idxLogoUrl !== -1 ? (row[idxLogoUrl] || null) : null;
 
@@ -296,7 +300,7 @@ export default function StoresPage() {
       })
       .filter((row) => row !== null) as {
         name: string;
-        description: string;
+        description: string | null;
         logo_url?: string | null;
         website_url?: string | null;
         tracking_link?: string | null;
@@ -511,6 +515,20 @@ export default function StoresPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    const openCouponsId = searchParams.get('openCoupons')?.trim();
+    if (!openCouponsId || loading || supabaseStores.length === 0) return;
+
+    const store =
+      supabaseStores.find((s) => s.id === openCouponsId) ||
+      supabaseStores.find((s) => String(s.storeId) === openCouponsId);
+
+    if (!store) return;
+
+    setPriorityStore(store);
+    router.replace('/admin/stores');
+  }, [searchParams, supabaseStores, loading, router]);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -566,7 +584,7 @@ export default function StoresPage() {
       name: formData.name || '',
       subStoreName: formData.subStoreName || undefined,
       slug: formData.slug || '',
-      description: formData.description || '',
+      description: formData.description?.trim() || undefined,
       logoUrl: logoUrlToSave,
       seoTitle: formData.seoTitle || undefined,
       seoDescription: formData.seoDescription || undefined,
@@ -724,7 +742,7 @@ export default function StoresPage() {
         // Auto-populate form fields
         setFormData({
           name: data.name || formData.name || '',
-          description: data.description || formData.description || '',
+          description: data.description?.trim() || formData.description?.trim() || '',
           isTrending: formData.isTrending || false,
           layoutPosition: formData.layoutPosition || null,
         });
@@ -1308,19 +1326,18 @@ export default function StoresPage() {
 
             <div>
               <label htmlFor="description" className="block text-gray-700 text-sm font-semibold mb-2">
-                Description
+                Description <span className="font-normal text-gray-500">(Optional)</span>
               </label>
               <textarea
                 id="description"
                 name="description"
-                placeholder="Store Description"
+                placeholder="Store Description (optional)"
                 value={formData.description || ''}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
-                required
               />
             </div>
 

@@ -6,7 +6,7 @@ export interface Store {
   name: string
   subStoreName?: string
   slug?: string
-  description: string
+  description?: string
   logoUrl?: string
   websiteUrl?: string
   trackingLink?: string
@@ -41,7 +41,7 @@ export async function getStores(): Promise<Store[]> {
       name: item.store_name || item.name,  // Support both old and new schema
       subStoreName: item.sub_store_name,
       slug: item.slug,
-      description: item.description || '',
+      description: item.description?.trim() || undefined,
       logoUrl: item.store_logo_url || item.logo_url,  // Support both old and new schema
       websiteUrl: item.website_url,
       trackingLink: item.tracking_link,
@@ -99,7 +99,7 @@ export async function getTrendingStores(): Promise<(Store | null)[]> {
             name: item.store_name || item.name,
             subStoreName: item.sub_store_name,
             slug: item.slug,
-            description: item.description || '',
+            description: item.description?.trim() || undefined,
             logoUrl: item.store_logo_url || item.logo_url,
             voucherText: item.voucher_text,
             seoTitle: item.seo_title || item.seoTitle,
@@ -128,7 +128,7 @@ export async function createStore(store: Omit<Store, 'id'>) {
         store_name: store.name,
         subStoreName: store.subStoreName,
         slug: store.slug,
-        description: store.description,
+        description: store.description?.trim() || null,
         store_logo_url: store.logoUrl,
         website_url: store.websiteUrl,
         tracking_link: store.trackingLink,
@@ -178,7 +178,7 @@ export async function getStoreById(id: string): Promise<Store | null> {
       name: data.store_name || data.name,
       subStoreName: data.sub_store_name,
       slug: data.slug,
-      description: data.description || '',
+      description: data.description?.trim() || undefined,
       logoUrl: data.store_logo_url || data.logo_url,
       websiteUrl: data.website_url,
       trackingLink: data.tracking_link,
@@ -219,7 +219,7 @@ export async function getStoreBySlug(slug: string): Promise<Store | null> {
       name: data.store_name || data.name,
       subStoreName: data.sub_store_name,
       slug: data.slug,
-      description: data.description || '',
+      description: data.description?.trim() || undefined,
       logoUrl: data.store_logo_url || data.logo_url,
       websiteUrl: data.website_url,
       trackingLink: data.tracking_link,
@@ -273,7 +273,9 @@ export async function updateStore(id: string, updates: Partial<Store>) {
     if (updates.name) updateData.store_name = updates.name
     if (updates.subStoreName !== undefined) updateData.subStoreName = updates.subStoreName
     if (updates.slug !== undefined) updateData.slug = updates.slug
-    if (updates.description !== undefined) updateData.description = updates.description
+    if (updates.description !== undefined) {
+      updateData.description = updates.description?.trim() || null
+    }
     if (updates.logoUrl !== undefined) updateData.store_logo_url = updates.logoUrl
     if (updates.voucherText !== undefined) updateData.voucher_text = updates.voucherText
     if (updates.seoTitle !== undefined) updateData.seoTitle = updates.seoTitle
@@ -344,7 +346,7 @@ export async function getStoresByCategoryId(categoryId: string): Promise<Store[]
       name: item.store_name || item.name,
       subStoreName: item.sub_store_name,
       slug: item.slug,
-      description: item.description || '',
+      description: item.description?.trim() || undefined,
       logoUrl: item.store_logo_url || item.logo_url,
       voucherText: item.voucher_text,
       seoTitle: item.seo_title || item.seoTitle,

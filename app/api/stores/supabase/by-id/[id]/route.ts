@@ -5,7 +5,7 @@ import { findStoreRowByParam, mapStoreRowToResponse } from '@/lib/server/findSto
 interface SupabaseStoreRow {
   store_id?: string | number;
   store_name: string;
-  description: string;
+  description?: string | null;
   store_logo_url?: string | null;
   isTrending?: boolean | null;
   seoTitle?: string | null;
@@ -14,6 +14,7 @@ interface SupabaseStoreRow {
   subStoreName?: string | null;
   tracking_link?: string | null;
   country?: string | null;
+  category_id?: string | null;
 }
 
 export async function GET(
@@ -64,7 +65,9 @@ export async function PATCH(
     };
     if (body.store_id !== undefined) updates.store_id = body.store_id;
     if (body.store_name !== undefined) updates.store_name = body.store_name;
-    if (body.description !== undefined) updates.description = body.description;
+    if (body.description !== undefined) {
+      updates.description = body.description?.trim() || null;
+    }
     if (body.store_logo_url !== undefined) updates.store_logo_url = body.store_logo_url;
     if (body.subStoreName !== undefined) updates.subStoreName = body.subStoreName;
     if (body.slug !== undefined) updates.slug = body.slug;
@@ -73,6 +76,8 @@ export async function PATCH(
     if (body.isTrending !== undefined) updates.isTrending = body.isTrending;
     if (body.tracking_link !== undefined) updates.tracking_link = body.tracking_link;
     if (body.country !== undefined) updates.country = body.country;
+    if (body.categoryId !== undefined) updates.category_id = body.categoryId || null;
+    if (body.category_id !== undefined) updates.category_id = body.category_id || null;
 
     const fieldCount = Object.keys(updates).length;
     if (fieldCount <= 1) {

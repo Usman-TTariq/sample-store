@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Facebook, Twitter, Instagram, Youtube, Linkedin, Phone, Mail, MapPin } from 'lucide-react';
 import { siteConfig } from '@/lib/seo/config';
+import SiteLogoText from '@/app/components/SiteLogoText';
 
 export default function Footer() {
   return (
@@ -101,10 +102,7 @@ export default function Footer() {
                 alt={`${siteConfig.name} Icon`}
                 className="w-12 h-12 object-contain"
               />
-              <span className="text-3xl font-bold tracking-tight leading-none">
-                <span className="text-white">Sample</span>
-                <span className="text-[#FFD23F]">Store</span>
-              </span>
+              <SiteLogoText className="text-3xl font-bold tracking-tight leading-none" />
             </div>
 
             {/* Social Media Icons */}

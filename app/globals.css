@@ -89,7 +89,16 @@ label {
   }
 }
 
-/* Mobile Animations */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mobile Animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -143,6 +152,16 @@ label {
   }
 }
 
+/* Hide scrollbar for horizontal scrolling (all breakpoints) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Mobile animation classes - only apply on mobile */
 @media (max-width: 767px) {
   .animate-fade-in-up {
@@ -184,15 +203,5 @@ label {
   .animate-delay-4 {
     animation-delay: 0.4s;
     opacity: 0;
-  }
-  
-  /* Hide scrollbar for horizontal scrolling */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
   }
 }

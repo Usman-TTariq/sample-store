@@ -1,12 +1,12 @@
 import { supabaseServer } from '@/lib/supabase/server';
 
-export async function POST() {
+export async function DELETE() {
   try {
     const supabase = supabaseServer();
 
     const { error, count } = await supabase
       .from('coupons')
-      .delete({ count: 'exact' })
+      .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000');
 
     if (error) {
@@ -18,7 +18,7 @@ export async function POST() {
     }
 
     return new Response(
-      JSON.stringify({ success: true, count: count ?? 0 }),
+      JSON.stringify({ success: true, count: count || 0 }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {

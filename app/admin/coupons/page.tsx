@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import {
   getCoupons,
   createCoupon,
@@ -12,7 +12,9 @@ import {
 import { getCategories, Category } from '@/lib/services/categoryService';
 import Link from 'next/link';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
+import { normalizeRedirectUrl } from '@/lib/utils/url';
 import { getStores, Store } from '@/lib/services/storeService';
+import { sortCouponsByRecentActivity } from '@/lib/utils/couponOrder';
 
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -189,6 +191,54 @@ export default function CouponsPage() {
     return ['true', '1', 'yes', 'y', 't'].includes(v);
   };
 
+  const normalizeName = (value: string) =>
+    value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[^\w\s.-]/g, '');
+
+  const resolveStoreForUpload = (
+    storeName: string,
+    csvStoreId: number,
+    url: string | null,
+    storesList: Store[]
+  ): { uuid: string; name: string; storeId?: number } | null => {
+    const needle = storeName ? normalizeName(storeName) : '';
+
+    if (needle) {
+      const exact = storesList.find((s) => s.name && normalizeName(s.name) === needle);
+      if (exact?.id) return { uuid: exact.id, name: exact.name, storeId: exact.storeId };
+
+      const partial = storesList.find((s) => {
+        if (!s.name) return false;
+        const hay = normalizeName(s.name);
+        return hay.includes(needle) || needle.includes(hay);
+      });
+      if (partial?.id) return { uuid: partial.id, name: partial.name, storeId: partial.storeId };
+    }
+
+    if (csvStoreId) {
+      const byId = storesList.find((s) => s.storeId === csvStoreId);
+      if (byId?.id) return { uuid: byId.id, name: byId.name, storeId: byId.storeId };
+    }
+
+    if (url?.trim()) {
+      try {
+        const host = new URL(url.trim()).hostname.replace(/^www\./, '').toLowerCase();
+        const byUrl = storesList.find((s) => {
+          if (!s.websiteUrl) return false;
+          try {
+            return new URL(s.websiteUrl).hostname.replace(/^www\./, '').toLowerCase() === host;
+          } catch {
+            return false;
+          }
+        });
+        if (byUrl?.id) return { uuid: byUrl.id, name: byUrl.name, storeId: byUrl.storeId };
+      } catch {
+        // ignore invalid URL
+      }
+    }
+
+    return null;
+  };
+
   const handleBulkUpload = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -203,12 +253,13 @@ export default function CouponsPage() {
       return;
     }
 
-    const header = headerRow.map((h) => h.toString().trim().toLowerCase());
+    const header = headerRow.map((h) =>
+      h.toString().trim().replace(/^\ufeff/, '').toLowerCase()
+    );
     const indexOf = (name: string) => header.indexOf(name.toLowerCase());
 
     // Support both old CSV format and new Excel format
-    const idxStoreName =
-      indexOf('store name') !== -1 ? indexOf('store name') : indexOf('store_name');
+    const idxStoreName = indexOf('store name');
     const idxTitle = indexOf('title');
     const idxCouponType = indexOf('coupontype') !== -1 ? indexOf('coupontype') : indexOf('type');
     const idxCode = indexOf('code');
@@ -219,7 +270,7 @@ export default function CouponsPage() {
     const idxDiscountType = indexOf('discounttype');
     const idxExpiryDate = indexOf('expirydate') !== -1 ? indexOf('expirydate') : indexOf('expiry');
     const idxGetCodeText = indexOf('getcodetext');
-    const idxGetDealText = indexOf('getdealtext') !== -1 ? indexOf('getdealtext') : indexOf('deal');
+    const idxGetDealText = indexOf('getdealtext');
     const idxIsActive = indexOf('isactive');
     const idxIsLatest = indexOf('islatest');
     const idxIsPopular = indexOf('ispopular');
@@ -230,40 +281,70 @@ export default function CouponsPage() {
     const idxStoreId = indexOf('store_id');
     const idxUrl = indexOf('url') !== -1 ? indexOf('url') : (indexOf('tracking link') !== -1 ? indexOf('tracking link') : indexOf('coupon url'));
 
-    // Either store_id or store name is required
-    if (idxStoreId === -1 && idxStoreName === -1) {
-      setUploadPreviewError('File must include either "store_id" or "Store Name" column.');
+    const missingRequired: string[] = [];
+    if (idxStoreName === -1) missingRequired.push('Store Name');
+    if (idxCouponType === -1) missingRequired.push('couponType');
+    if (idxCode === -1) missingRequired.push('code');
+    if (idxTitle === -1) missingRequired.push('title');
+    if (missingRequired.length) {
+      setUploadPreviewError(`Required columns missing: ${missingRequired.join(', ')}`);
       return;
     }
 
+    let storesList = stores;
+    try {
+      const freshStores = await getStores();
+      if (freshStores.length) {
+        storesList = freshStores;
+        setStores(freshStores);
+      }
+    } catch {
+      // use cached stores list
+    }
+
+    const validationErrors: string[] = [];
+
     const supabaseRows = dataRows
-      .map((row) => {
-        const storeName =
-          idxStoreName !== -1 ? row[idxStoreName]?.toString().trim() || null : null;
-        const store_id =
-          idxStoreId !== -1 && row[idxStoreId] != null && String(row[idxStoreId]).trim() !== ''
-            ? row[idxStoreId]
-            : null;
+      .map((row, index) => {
+        const rowNum = index + 2;
+        const csvStoreId = idxStoreId !== -1 ? parseInt(row[idxStoreId] || '0', 10) || 0 : 0;
+        const storeName = row[idxStoreName]?.toString().trim() || '';
+        const title = row[idxTitle]?.toString().trim() || '';
+        const couponTypeRaw = row[idxCouponType]?.toString().trim().toLowerCase() || '';
+        const couponType = couponTypeRaw === 'deal' ? 'deal' : couponTypeRaw === 'code' ? 'code' : '';
+        const code = row[idxCode]?.toString().trim() || '';
+        const url = idxUrl !== -1 ? row[idxUrl]?.toString().trim() || null : null;
 
-        if (!storeName && !store_id) return null;
+        if (!storeName) {
+          validationErrors.push(`Row ${rowNum}: Store Name is required`);
+          return null;
+        }
+        if (!couponType) {
+          validationErrors.push(`Row ${rowNum}: couponType must be "code" or "deal"`);
+          return null;
+        }
+        if (!title) {
+          validationErrors.push(`Row ${rowNum}: title is required`);
+          return null;
+        }
+        if (couponType === 'code' && !code) {
+          validationErrors.push(`Row ${rowNum}: code is required when couponType is "code"`);
+          return null;
+        }
 
+        const resolved = resolveStoreForUpload(storeName, csvStoreId, url, storesList);
         const description =
-          idxTitle !== -1 && row[idxTitle]
-            ? row[idxTitle]
-            : idxDescription !== -1
-              ? row[idxDescription]
-              : null;
+          idxDescription !== -1 && row[idxDescription]
+            ? row[idxDescription]
+            : title;
 
         return {
-          store_id,
-          storeName,
-          couponType:
-            idxCouponType !== -1
-              ? row[idxCouponType]?.toString().toLowerCase() === 'deal'
-                ? 'deal'
-                : 'code'
-              : 'code',
-          code: idxCode !== -1 ? row[idxCode] || null : null,
+          storeUuid: resolved?.uuid,
+          store_id: resolved?.storeId ?? (csvStoreId || null),
+          storeName: storeName || resolved?.name,
+          title,
+          couponType,
+          code: couponType === 'deal' ? null : code,
           categoryId: idxCategoryId !== -1 ? row[idxCategoryId] || null : null,
           currentUses: idxCurrentUses !== -1 ? parseInt(row[idxCurrentUses] || '0', 10) : 0,
           description,
@@ -275,21 +356,21 @@ export default function CouponsPage() {
           isActive: idxIsActive !== -1 ? normalizeBoolean(row[idxIsActive]) : true,
           isLatest: idxIsLatest !== -1 ? normalizeBoolean(row[idxIsLatest]) : false,
           isPopular: idxIsPopular !== -1 ? normalizeBoolean(row[idxIsPopular]) : false,
-          latestLayoutPosition:
-            idxLatestLayoutPosition !== -1
-              ? parseInt(row[idxLatestLayoutPosition] || '0', 10) || null
-              : null,
-          layoutPosition:
-            idxLayoutPosition !== -1 ? parseInt(row[idxLayoutPosition] || '0', 10) || null : null,
+          latestLayoutPosition: idxLatestLayoutPosition !== -1 ? (parseInt(row[idxLatestLayoutPosition] || '0', 10) || null) : null,
+          layoutPosition: idxLayoutPosition !== -1 ? (parseInt(row[idxLayoutPosition] || '0', 10) || null) : null,
           logoUrl: idxLogoUrl !== -1 ? row[idxLogoUrl] || null : null,
           maxUses: idxMaxUses !== -1 ? parseInt(row[idxMaxUses] || '0', 10) : 100,
-          url: idxUrl !== -1 ? row[idxUrl] || null : null,
+          url,
         };
       })
       .filter((row) => row !== null);
 
     if (!supabaseRows.length) {
-      setUploadPreviewError('No valid data rows found in CSV.');
+      setUploadPreviewError(
+        validationErrors.length
+          ? validationErrors.slice(0, 8).join('\n')
+          : 'No valid rows to upload. Check required fields in each row.'
+      );
       return;
     }
 
@@ -305,18 +386,25 @@ export default function CouponsPage() {
 
       const result = await response.json();
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Bulk upload failed.');
+        const detail = Array.isArray(result.errors) && result.errors.length
+          ? `\n${result.errors.slice(0, 8).join('\n')}`
+          : '';
+        throw new Error((result.error || 'Bulk upload failed.') + detail);
       }
 
-      let message = `Successfully uploaded ${result.uploaded ?? result.count ?? supabaseRows.length} coupon(s).`;
-      if (result.skipped) message += ` ${result.skipped} row(s) skipped.`;
-      if (result.storesCreated > 0) {
-        message += `\n\n${result.storesCreated} new store(s) auto-created: ${(result.storeNames || []).join(', ')}`;
-      }
-      if (result.errors?.length) {
-        message += `\n\nIssues:\n${result.errors.slice(0, 15).join('\n')}`;
-      }
-      alert(message);
+      const storesCreatedNote =
+        result.storesCreated > 0 && Array.isArray(result.storeNames)
+          ? `\n\n${result.storesCreated} new store(s) auto-created: ${result.storeNames.join(', ')}`
+          : '';
+
+      const skippedNote =
+        result.skipped > 0 && Array.isArray(result.errors)
+          ? `\n\nSkipped ${result.skipped}:\n${result.errors.slice(0, 8).join('\n')}`
+          : '';
+
+      alert(
+        `Successfully uploaded ${result.uploaded ?? supabaseRows.length} coupons.${storesCreatedNote}${skippedNote}`
+      );
       setShowUploadModal(false);
       setUploadPreviewRows([]);
       setUploadPreviewError(null);
@@ -351,21 +439,8 @@ export default function CouponsPage() {
   const fetchCoupons = async () => {
     setLoading(true);
     try {
-      const [firebaseCoupons, supabaseResponse] = await Promise.all([
-        getCoupons(),
-        fetch('/api/coupons/supabase')
-          .then((res) => res.json())
-          .catch((err) => {
-            console.error('Error fetching Supabase coupons in admin fetchCoupons:', err);
-            return { success: false, coupons: [] };
-          }),
-      ]);
-
-      const supabaseList: Coupon[] = Array.isArray(supabaseResponse?.coupons)
-        ? (supabaseResponse.coupons as Coupon[])
-        : [];
-
-      setCoupons([...firebaseCoupons, ...supabaseList]);
+      const couponsData = await getCoupons();
+      setCoupons(sortCouponsByRecentActivity(couponsData));
     } catch (err) {
       console.error('Error fetching coupons in admin fetchCoupons:', err);
       setCoupons([]);
@@ -378,23 +453,13 @@ export default function CouponsPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const [firebaseCoupons, categoriesData, storesData, supabaseResponse] = await Promise.all([
+        const [couponsData, categoriesData, storesData] = await Promise.all([
           getCoupons(),
           getCategories(),
           getStores(),
-          fetch('/api/coupons/supabase')
-            .then((res) => res.json())
-            .catch((err) => {
-              console.error('Error fetching Supabase coupons in admin load:', err);
-              return { success: false, coupons: [] };
-            }),
         ]);
 
-        const supabaseList: Coupon[] = Array.isArray(supabaseResponse?.coupons)
-          ? (supabaseResponse.coupons as Coupon[])
-          : [];
-
-        setCoupons([...firebaseCoupons, ...supabaseList]);
+        setCoupons(sortCouponsByRecentActivity(couponsData));
         setCategories(categoriesData);
         setStores(storesData);
       } catch (err) {
@@ -407,43 +472,96 @@ export default function CouponsPage() {
     load();
   }, []);
 
-  const resetCouponForm = (keepSelectedStores = false) => {
-    const keptStoreIds = keepSelectedStores ? [...selectedStoreIds] : [];
-    setFormData({
-      code: '',
-      storeName: '',
-      discount: 0,
-      discountType: 'percentage',
-      description: '',
-      url: '',
-      isActive: true,
-      maxUses: 100,
-      currentUses: 0,
-      expiryDate: null,
-      isPopular: false,
-      layoutPosition: null,
-      isLatest: false,
-      latestLayoutPosition: null,
-      categoryId: null,
-      couponType: 'code',
-      getCodeText: '',
-      getDealText: '',
-    });
-    setLogoFile(null);
-    setLogoPreview(null);
-    setLogoUrl('');
-    setExtractedLogoUrl(null);
-    setCouponUrl('');
-    setFileInputKey((prev) => prev + 1);
-    setSelectedStoreIds(keptStoreIds);
-    setUploadingToCloudinary(false);
-    setLogoUploadMethod('file');
+  const getDefaultFormData = (): Partial<Coupon> => ({
+    code: '',
+    storeName: '',
+    discount: 0,
+    discountType: 'percentage',
+    description: '',
+    url: '',
+    isActive: true,
+    maxUses: 100,
+    currentUses: 0,
+    expiryDate: null,
+    isPopular: false,
+    layoutPosition: null,
+    isLatest: false,
+    latestLayoutPosition: null,
+    categoryId: null,
+    couponType: 'code',
+    getCodeText: '',
+    getDealText: '',
+  });
+
+  const toDateInputValue = (date: string | null | undefined): string => {
+    if (!date) return '';
+    const match = String(date).match(/^(\d{4}-\d{2}-\d{2})/);
+    if (match) return match[1];
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return '';
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   };
 
-  const handleCreate = async (e: React.FormEvent, addAnother = false) => {
-    e.preventDefault();
+  const getStoreRedirectUrl = (store: Store): string => {
+    const raw = store.trackingLink || store.websiteUrl || '';
+    return normalizeRedirectUrl(raw) || '';
+  };
 
-    if (isCreating) return; // Prevent double submission
+  const getStoreLogoUrl = (store: Store): string => {
+    if (store.logoUrl?.trim()) return store.logoUrl;
+    const siteUrl = store.trackingLink || store.websiteUrl;
+    if (siteUrl) {
+      try {
+        const url = new URL(siteUrl);
+        return `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=64`;
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  };
+
+  const resetFormAfterCreate = (keepStore: boolean) => {
+    setFormData(getDefaultFormData());
+    setLogoFile(null);
+    setLogoPreview(null);
+    setCouponUrl('');
+    setFileInputKey((prev) => prev + 1);
+    setUploadingToCloudinary(false);
+
+    if (keepStore) {
+      if (selectedStoreIds.length > 0) {
+        const firstStore = stores.find((s) => s.id === selectedStoreIds[0]);
+        const storeLogo = firstStore ? getStoreLogoUrl(firstStore) : '';
+        if (storeLogo) {
+          setLogoUrl(storeLogo);
+          setLogoPreview(storeLogo);
+          setExtractedLogoUrl(isCloudinaryUrl(storeLogo) ? extractOriginalCloudinaryUrl(storeLogo) : null);
+          setLogoUploadMethod('url');
+        } else {
+          setLogoUrl('');
+          setExtractedLogoUrl(null);
+          setLogoUploadMethod('file');
+        }
+      } else {
+        setLogoUrl('');
+        setExtractedLogoUrl(null);
+        setLogoUploadMethod('file');
+      }
+    } else {
+      setSelectedStoreIds([]);
+      setLogoUrl('');
+      setExtractedLogoUrl(null);
+      setLogoUploadMethod('file');
+      setShowForm(false);
+    }
+  };
+
+  const submitCoupon = async (addAnother: boolean) => {
+    if (isCreating) return;
 
     setIsCreating(true);
 
@@ -512,6 +630,17 @@ export default function CouponsPage() {
     const validStoreIds = selectedStoreIds.filter(id => id && id.trim() !== '');
     couponData.storeIds = validStoreIds.length > 0 ? validStoreIds : [];
 
+    if (!couponData.url?.trim() && validStoreIds.length > 0) {
+      const firstStore = stores.find((s) => s.id === validStoreIds[0]);
+      if (firstStore) {
+        couponData.url = getStoreRedirectUrl(firstStore);
+      }
+    }
+
+    if (couponData.url) {
+      couponData.url = normalizeRedirectUrl(couponData.url);
+    }
+
     // Debug log
     console.log('📝 Creating coupon with data:', {
       storeName: couponData.storeName,
@@ -543,13 +672,14 @@ export default function CouponsPage() {
       }
 
       if (result.success) {
+        setCurrentPage(1);
         fetchCoupons();
         if (addAnother) {
-          resetCouponForm(true);
-          alert('Coupon created! You can add another below.');
+          alert('Coupon created! Add another coupon for the same store.');
+          resetFormAfterCreate(true);
         } else {
-          setShowForm(false);
-          resetCouponForm(false);
+          alert('Coupon created successfully!');
+          resetFormAfterCreate(false);
         }
       } else {
         // Show error message
@@ -567,6 +697,15 @@ export default function CouponsPage() {
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitCoupon(false);
+  };
+
+  const handleCreateAndAddAnother = () => {
+    submitCoupon(true);
   };
 
   const handleExtractFromUrl = async () => {
@@ -742,12 +881,21 @@ export default function CouponsPage() {
   };
 
   const handleDeleteAll = async () => {
-    if (!confirm('Delete ALL coupons? This cannot be undone.')) return;
-    if (!confirm('This will permanently remove every coupon. Are you absolutely sure?')) return;
+    if (!confirm('Are you sure you want to delete ALL coupons? This action cannot be undone!')) {
+      return;
+    }
+
+    if (!confirm('This will permanently delete all coupons from the database. Are you absolutely sure?')) {
+      return;
+    }
 
     try {
-      const response = await fetch('/api/coupons/delete-all', { method: 'POST' });
+      const response = await fetch('/api/coupons/delete-all', {
+        method: 'DELETE',
+      });
+
       const result = await response.json();
+
       if (response.ok && result.success) {
         alert(`Successfully deleted ${result.count ?? 'all'} coupons.`);
         fetchCoupons();
@@ -765,13 +913,29 @@ export default function CouponsPage() {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  // Filter coupons based on search query
-  const filteredCoupons = searchQuery.trim() === ''
-    ? coupons
-    : coupons.filter(coupon =>
-      coupon.storeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      coupon.code?.toLowerCase().includes(searchQuery.toLowerCase())
+  const getCouponStoreDisplayName = (coupon: Coupon): string => {
+    if (coupon.storeIds && coupon.storeIds.length > 0) {
+      const linkedNames = coupon.storeIds
+        .map((storeId) => stores.find((s) => s.id === storeId)?.name)
+        .filter((name): name is string => Boolean(name));
+      if (linkedNames.length > 0) {
+        return linkedNames.join(', ');
+      }
+    }
+    return coupon.storeName || 'N/A';
+  };
+
+  const filteredCoupons = useMemo(() => {
+    const sorted = sortCouponsByRecentActivity(coupons);
+    if (searchQuery.trim() === '') return sorted;
+
+    const term = searchQuery.toLowerCase();
+    return sorted.filter(
+      (coupon) =>
+        getCouponStoreDisplayName(coupon).toLowerCase().includes(term) ||
+        coupon.code?.toLowerCase().includes(term)
     );
+  }, [coupons, searchQuery, stores]);
 
   const totalPages = Math.max(1, Math.ceil(filteredCoupons.length / pageSize));
   const paginatedCoupons = filteredCoupons.slice(
@@ -786,9 +950,9 @@ export default function CouponsPage() {
         <div className="flex gap-2">
           <button
             onClick={handleDeleteAll}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition whitespace-nowrap"
+            className="cursor-pointer bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition whitespace-nowrap"
           >
-            Delete All
+            Delete All Coupons
           </button>
           <button
             onClick={() => {
@@ -796,7 +960,7 @@ export default function CouponsPage() {
               setUploadPreviewError(null);
               setShowUploadModal(true);
             }}
-            className="bg-[#FFD23F] text-black px-4 py-2 rounded-lg hover:bg-black hover:text-white transition whitespace-nowrap"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition whitespace-nowrap"
           >
             Upload Coupons
           </button>
@@ -852,24 +1016,18 @@ export default function CouponsPage() {
               </div>
 
               <div>
-                <div className="text-gray-700 text-sm font-semibold mb-2">Expected Columns for Coupons:</div>
-                <div className="text-gray-500 text-xs">
-                  <ul className="list-disc list-inside flex flex-wrap gap-2">
-                    <li>store_id</li>
-                    <li>couponType</li>
-                    <li>code</li>
-                    <li>description</li>
-                    <li>discount</li>
-                    <li>discountType</li>
-                    <li>expiryDate</li>
-                    <li>isActive</li>
-                    <li>isLatest</li>
-                    <li>isPopular</li>
-                    <li>logoUrl</li>
-                    <li>maxUses</li>
-                    <li>url</li>
+                <div className="text-gray-700 text-sm font-semibold mb-2">Required columns</div>
+                <div className="text-gray-700 text-xs mb-3">
+                  <ul className="list-disc list-inside space-y-0.5">
+                    <li><span className="font-semibold">Store Name</span> — store name (auto-created if missing)</li>
+                    <li><span className="font-semibold">couponType</span> — <code className="text-[11px]">code</code> or <code className="text-[11px]">deal</code></li>
+                    <li><span className="font-semibold">code</span> — required when couponType is <code className="text-[11px]">code</code>; leave empty for deals</li>
+                    <li><span className="font-semibold">title</span> — offer title shown on the coupon card</li>
                   </ul>
                 </div>
+                <p className="text-xs text-gray-500">
+                  All other columns (url, description, discount, expiryDate, etc.) are optional.
+                </p>
               </div>
 
               <div>
@@ -933,7 +1091,7 @@ export default function CouponsPage() {
                 <button
                   type="submit"
                   disabled={uploadingBulkCoupons}
-                  className="cursor-pointer px-4 py-2 rounded-lg bg-[#FFD23F] text-black hover:bg-black hover:text-white transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploadingBulkCoupons ? 'Uploading...' : 'Upload'}
                 </button>
@@ -1102,6 +1260,7 @@ export default function CouponsPage() {
                                         // Auto-fetch logo from first selected store
                                         if (newSelectedIds.length === 1) {
                                           let logoToUse = '';
+                                          const redirectUrl = getStoreRedirectUrl(store);
 
                                           // Priority 1: Use store's logoUrl if available
                                           if (store.logoUrl && store.logoUrl.trim() !== '') {
@@ -1127,6 +1286,10 @@ export default function CouponsPage() {
                                             handleLogoUrlChange(logoToUse);
                                             setLogoUploadMethod('url');
                                             console.log('✅ Auto-populated logo:', logoToUse);
+                                          }
+
+                                          if (redirectUrl) {
+                                            setFormData((prev) => ({ ...prev, url: redirectUrl }));
                                           }
                                         }
                                       } else {
@@ -1445,7 +1608,7 @@ export default function CouponsPage() {
 
               {/* Show Cloudinary URL if uploaded */}
               {logoUrl && logoUploadMethod === 'url' && (
-                <div className="mt-2 p-2 bg-[#FFFBF0] rounded text-sm text-[#B8860B]">
+                <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
                   <strong>✅ Uploaded to Cloudinary:</strong>
                   <div className="mt-1 break-all text-xs">{logoUrl}</div>
                 </div>
@@ -1479,7 +1642,9 @@ export default function CouponsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="maxUses" className="sr-only">Max Uses</label>
+                <label htmlFor="maxUses" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Max Uses
+                </label>
                 <input
                   id="maxUses"
                   name="maxUses"
@@ -1492,9 +1657,30 @@ export default function CouponsPage() {
                       maxUses: parseInt(e.target.value),
                     })
                   }
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
+              </div>
+              <div>
+                <label htmlFor="expiryDate" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Expiry Date (Optional)
+                </label>
+                <input
+                  id="expiryDate"
+                  name="expiryDate"
+                  type="date"
+                  value={toDateInputValue(formData.expiryDate)}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      expiryDate: e.target.value || null,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Leave empty if the coupon does not expire.
+                </p>
               </div>
             </div>
 
@@ -1514,32 +1700,13 @@ export default function CouponsPage() {
             </div>
 
             <div>
-              <label htmlFor="expiryDate" className="block text-gray-700 text-sm font-semibold mb-2">
-                Expiry Date
-              </label>
-              <input
-                id="expiryDate"
-                name="expiryDate"
-                type="date"
-                value={formData.expiryDate ? String(formData.expiryDate).split('T')[0] : ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    expiryDate: e.target.value ? e.target.value : null,
-                  })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
               <label htmlFor="url" className="block text-gray-700 text-sm font-semibold mb-2">
                 Coupon URL (Where user should be redirected when clicking "Get Deal")
               </label>
               <input
                 id="url"
                 name="url"
-                type="url"
+                type="text"
                 placeholder="https://example.com/coupon-page"
                 value={formData.url || ''}
                 onChange={(e) =>
@@ -1726,7 +1893,7 @@ export default function CouponsPage() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="submit"
                 disabled={isCreating}
@@ -1746,13 +1913,16 @@ export default function CouponsPage() {
               </button>
               <button
                 type="button"
+                onClick={handleCreateAndAddAnother}
                 disabled={isCreating}
-                onClick={(e) => handleCreate(e as unknown as React.FormEvent, true)}
-                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Add Another
+                {isCreating ? 'Creating...' : 'Add Another'}
               </button>
             </div>
+            <p className="text-xs text-gray-500 text-center">
+              Use &quot;Add Another&quot; to save this coupon and start a new one for the same selected store.
+            </p>
           </form>
         </div>
       )}
@@ -1815,7 +1985,7 @@ export default function CouponsPage() {
                 {paginatedCoupons.map((coupon) => (
                   <tr key={coupon.id} className="border-b hover:bg-gray-50">
                     <td className="px-4 sm:px-6 py-4 text-sm font-semibold text-gray-900">
-                      {coupon.storeName || 'N/A'}
+                      {getCouponStoreDisplayName(coupon)}
                     </td>
                     <td className="px-4 sm:px-6 py-4 font-mono font-semibold text-xs sm:text-sm">
                       {coupon.code || 'N/A'}
@@ -1830,7 +2000,7 @@ export default function CouponsPage() {
                       <button
                         onClick={() => handleToggleActive(coupon)}
                         className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer whitespace-nowrap ${coupon.isActive
-                          ? 'bg-[#FFFBF0] text-[#B8860B] hover:bg-[#FFE566]/20'
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                       >

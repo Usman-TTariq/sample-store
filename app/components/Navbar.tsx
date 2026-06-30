@@ -289,10 +289,9 @@ export default function Navbar() {
     },
     {
       name: "Blogs",
-      path: "/blog",
+      path: "/blogs",
       component: <SimpleMenu items={[
-        { label: "Latest News", href: "/blog" },
-        { label: "Savings Tips", href: "/blog/tips" }
+        { label: "Latest News", href: "/blogs" },
       ]} />
     },
   ];

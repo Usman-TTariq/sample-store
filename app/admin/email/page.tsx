@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { getEmailSettings, updateEmailSettings, EmailSettings } from '@/lib/services/emailService';
-import { siteConfig } from '@/lib/seo/config';
 
 export default function EmailPage() {
   const [emailSettings, setEmailSettings] = useState<EmailSettings | null>(null);
@@ -107,7 +106,7 @@ export default function EmailPage() {
           <div
             className={`mb-6 p-4 rounded-lg ${
               message.type === 'success'
-                ? 'bg-[#FFFBF0] border border-[#FFD23F]/40 text-[#B8860B]'
+                ? 'bg-green-50 border border-green-200 text-green-800'
                 : 'bg-red-50 border border-red-200 text-red-800'
             }`}
           >
@@ -126,7 +125,7 @@ export default function EmailPage() {
                 id="email1"
                 value={email1}
                 onChange={(e) => setEmail1(e.target.value)}
-                placeholder={siteConfig.emails.admin}
+                placeholder="admin@COUPACHU.com"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
@@ -140,7 +139,7 @@ export default function EmailPage() {
                 id="email2"
                 value={email2}
                 onChange={(e) => setEmail2(e.target.value)}
-                placeholder={siteConfig.emails.support}
+                placeholder="support@COUPACHU.com"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
@@ -154,7 +153,7 @@ export default function EmailPage() {
                 id="email3"
                 value={email3}
                 onChange={(e) => setEmail3(e.target.value)}
-                placeholder={siteConfig.emails.info}
+                placeholder="info@COUPACHU.com"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
@@ -170,7 +169,7 @@ export default function EmailPage() {
             </button>
             {emailSettings?.updatedAt && (
               <div className="flex items-center text-sm text-gray-500">
-                Last updated: {emailSettings.updatedAt.toDate().toLocaleString()}
+                Last updated: {emailSettings.updatedAt.toLocaleString()}
               </div>
             )}
           </div>

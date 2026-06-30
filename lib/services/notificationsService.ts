@@ -1,8 +1,6 @@
 // Notifications service using localStorage
 // This stores notifications locally in the browser
 
-import { siteConfig } from '@/lib/seo/config';
-
 export interface Notification {
   id: string;
   title: string;
@@ -13,7 +11,7 @@ export interface Notification {
   link?: string; // Optional link to navigate
 }
 
-const NOTIFICATIONS_KEY = 'sample_store_notifications';
+const NOTIFICATIONS_KEY = 'coupachu_notifications';
 
 // Get all notifications
 export function getNotifications(): Notification[] {
@@ -114,7 +112,7 @@ export function initializeSampleNotifications(): void {
   const existing = getNotifications();
   if (existing.length === 0) {
     addNotification({
-      title: `Welcome to ${siteConfig.name}!`,
+      title: 'Welcome to COUPACHU!',
       message: 'Discover amazing deals and save money with our exclusive coupons.',
       type: 'info'
     });

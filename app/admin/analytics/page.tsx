@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { getCoupons, Coupon } from '@/lib/services/couponService';
-import { toJsDate } from '@/lib/utils/date';
 
 export default function AnalyticsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -16,10 +15,12 @@ export default function AnalyticsPage() {
 
       const now = Date.now();
       const expiring = data.filter((c) => {
-        const expiry = toJsDate(c.expiryDate);
-        if (!expiry) return false;
+        if (!c.expiryDate) return false;
+        const expiryTime = typeof c.expiryDate === 'string'
+          ? new Date(c.expiryDate).getTime()
+          : (c.expiryDate as any).toDate().getTime();
         const daysUntilExpiry = Math.floor(
-          (expiry.getTime() - now) / (1000 * 60 * 60 * 24)
+          (expiryTime - now) / (1000 * 60 * 60 * 24)
         );
         return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
       }).length;

@@ -114,11 +114,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="bg-[#FFFBF0] p-4 sm:p-6 rounded-lg border border-[#FFD23F]/40">
+            <div className="bg-green-50 p-4 sm:p-6 rounded-lg border border-green-200">
               <div className="text-gray-600 text-xs sm:text-sm font-semibold">
                 Active Coupons
               </div>
-              <div className="text-2xl sm:text-3xl font-bold text-[#B8860B] mt-2">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 mt-2">
                 {stats.activeCoupons}
               </div>
             </div>
@@ -132,11 +132,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="bg-[#FFFBF0] p-4 sm:p-6 rounded-lg border border-[#FFD23F]/40">
+            <div className="bg-orange-50 p-4 sm:p-6 rounded-lg border border-orange-200">
               <div className="text-gray-600 text-xs sm:text-sm font-semibold">
                 Avg Discount
               </div>
-              <div className="text-2xl sm:text-3xl font-bold text-[#B8860B] mt-2">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-600 mt-2">
                 {stats.averageDiscount}%
               </div>
             </div>
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                           <span
                             className={`px-2 py-1 rounded text-xs font-semibold ${
                               coupon.isActive
-                                ? 'bg-[#FFFBF0] text-[#B8860B]'
+                                ? 'bg-green-100 text-green-700'
                                 : 'bg-gray-100 text-gray-700'
                             }`}
                           >

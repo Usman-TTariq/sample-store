@@ -1,6 +1,6 @@
 import { supabaseServer } from '@/lib/supabase/server';
 
-function mapCouponFromRow(row: Record<string, unknown>) {
+function mapDbRowToCoupon(row: Record<string, unknown>) {
   const storeIds = Array.isArray(row.store_ids)
     ? (row.store_ids as string[]).map(String)
     : row.store_id
@@ -10,7 +10,6 @@ function mapCouponFromRow(row: Record<string, unknown>) {
   return {
     id: row.id != null ? String(row.id) : undefined,
     code: (row.code as string) || '',
-    title: (row.title as string) || undefined,
     storeName: (row.store_name as string) || undefined,
     storeIds,
     discount: Number(row.discount_value ?? row.discount ?? 0),
@@ -22,16 +21,16 @@ function mapCouponFromRow(row: Record<string, unknown>) {
     expiryDate: (row.expiry_date as string) || null,
     logoUrl: (row.logo_url as string) || undefined,
     url: (row.url as string) || undefined,
-    couponType: ((row.coupon_type as string) || 'deal') as 'code' | 'deal',
+    couponType: ((row.coupon_type as string) || 'code') as 'code' | 'deal',
     getCodeText: (row.get_code_text as string) || undefined,
     getDealText: (row.get_deal_text as string) || undefined,
     isPopular: Boolean(row.featured),
-    layoutPosition: (row.layout_position as number) ?? null,
+    layoutPosition: (row.layout_position as number | null) ?? null,
     isLatest: Boolean(row.is_latest),
-    latestLayoutPosition: (row.latest_layout_position as number) ?? null,
+    latestLayoutPosition: (row.latest_layout_position as number | null) ?? null,
     categoryId: (row.category_id as string) || null,
-    createdAt: (row.created_at as string) || undefined,
-    updatedAt: (row.updated_at as string) || undefined,
+    createdAt: row.created_at as string | undefined,
+    updatedAt: row.updated_at as string | undefined,
   };
 }
 
@@ -42,7 +41,8 @@ export async function GET() {
     const { data, error } = await supabase
       .from('coupons')
       .select('*')
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Supabase get coupons error:', error);
@@ -52,7 +52,9 @@ export async function GET() {
       );
     }
 
-    const coupons = (data || []).map((row) => mapCouponFromRow(row as Record<string, unknown>));
+    const coupons = (data || []).map((row) =>
+      mapDbRowToCoupon(row as Record<string, unknown>)
+    );
 
     return new Response(
       JSON.stringify({ success: true, coupons }),

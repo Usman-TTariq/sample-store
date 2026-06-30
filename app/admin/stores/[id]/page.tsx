@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   getStoreById,
   updateStore,
-  deleteStore,
   Store,
   isSlugUnique,
 } from '@/lib/services/storeService';
@@ -113,7 +112,7 @@ export default function EditStorePage() {
       if (storeData) {
         setStore(storeData);
         setFormData(storeData);
-        setIsSupabaseStore(isSupabase);
+        setIsSupabaseStore(true);
         // Check if slug matches auto-generated slug from name
         const autoSlug = generateSlug(storeData.name || '');
         setAutoGenerateSlug(storeData.slug === autoSlug);
@@ -187,6 +186,7 @@ export default function EditStorePage() {
           seoDescription: updates.seoDescription,
           isTrending: updates.isTrending,
           tracking_link: updates.trackingLink,
+          country: updates.country,
         };
 
         const res = await fetch(`/api/stores/supabase/by-id/${encodeURIComponent(storeId)}`, {
@@ -197,6 +197,10 @@ export default function EditStorePage() {
 
         const data = await res.json();
         if (res.ok && data.success) {
+          const synced = typeof data.syncedCoupons === 'number' ? data.syncedCoupons : 0;
+          if (updates.trackingLink !== undefined && synced > 0) {
+            alert(`Store saved! Coupon URL updated on ${synced} related coupon(s).`);
+          }
           router.push('/admin/stores');
         } else {
           alert(`Failed to update store in Supabase: ${data.error || 'Unknown error'}`);
@@ -206,49 +210,58 @@ export default function EditStorePage() {
         alert('Failed to update store. Check console for details.');
       }
     } else {
-      // Update via Firebase
       const result = await updateStore(storeId, updates);
       if (result.success) {
+        if (updates.trackingLink !== undefined) {
+          try {
+            const syncRes = await fetch('/api/stores/sync-coupon-urls', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                storeUuid: storeId,
+                storeName: updates.name,
+                trackingLink: updates.trackingLink ?? null,
+              }),
+            });
+            const syncData = await syncRes.json();
+            if (syncData.success && syncData.updatedCount > 0) {
+              alert(`Store saved! Coupon URL updated on ${syncData.updatedCount} related coupon(s).`);
+            }
+          } catch (syncErr) {
+            console.error('Failed to sync coupon URLs:', syncErr);
+          }
+        }
         router.push('/admin/stores');
       }
     }
     setSaving(false);
   };
 
-  // const handleDelete = async () => {
-  //   if (!window.confirm('Are you sure you want to delete this store? This action cannot be undone.')) {
-  //     return;
-  //   }
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this store? This action cannot be undone.')) {
+      return;
+    }
 
-  //   setDeleting(true);
+    setDeleting(true);
 
-  //   if (isSupabaseStore) {
-  //     try {
-  //       const res = await fetch(`/api/stores/supabase/by-id/${encodeURIComponent(storeId)}`, {
-  //         method: 'DELETE',
-  //       });
-  //       const data = await res.json();
+    try {
+      const res = await fetch(`/api/stores/supabase/by-id/${encodeURIComponent(storeId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
 
-  //       if (res.ok && data.success) {
-  //         router.push('/admin/stores');
-  //       } else {
-  //         alert(`Failed to delete store from Supabase: ${data.error || 'Unknown error'}`);
-  //       }
-  //     } catch (err) {
-  //       console.error('Error deleting Supabase store:', err);
-  //       alert('Failed to delete store. Check console for details.');
-  //     }
-  //   } else { 
-  //     // Delete via Firebase
-  //     const result = await deleteStore(storeId);
-  //     if (result.success) {
-  //       router.push('/admin/stores');
-  //     } else {
-  //       alert('Failed to delete store from Firebase.');
-  //     }
-  //   }
-  //   setDeleting(false);
-  // };
+      if (res.ok && data.success) {
+        router.push('/admin/stores');
+      } else {
+        alert(`Failed to delete store: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Error deleting store:', err);
+      alert('Failed to delete store. Check console for details.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleLogoUrlChange = (url: string) => {
     setLogoUrl(url);
@@ -277,7 +290,14 @@ export default function EditStorePage() {
         >
           ← Back
         </button>
-
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 font-semibold disabled:opacity-50"
+        >
+          {deleting ? 'Deleting...' : 'Delete Store'}
+        </button>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -328,24 +348,40 @@ export default function EditStorePage() {
             </div>
           </div>
 
-          <div>
-            <label htmlFor="trackingLink" className="block text-sm font-semibold text-gray-700 mb-1">
-              Tracking Link (Affiliate URL)
-            </label>
-            <input
-              id="trackingLink"
-              name="trackingLink"
-              type="url"
-              placeholder="https://example.com/track?id=123"
-              value={formData.trackingLink || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, trackingLink: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Affiliate tracking URL for this store
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="country" className="block text-sm font-semibold text-gray-700 mb-1">
+                Country
+              </label>
+              <input
+                id="country"
+                name="country"
+                type="text"
+                placeholder="US, UK, DE..."
+                value={formData.country || 'US'}
+                onChange={(e) =>
+                  setFormData({ ...formData, country: e.target.value.toUpperCase() })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                maxLength={2}
+              />
+            </div>
+            <div>
+              <label htmlFor="trackingLink" className="block text-sm font-semibold text-gray-700 mb-1">
+                Tracking Link (Affiliate URL)
+              </label>
+              <input
+                id="trackingLink"
+                name="trackingLink"
+                type="text"
+                placeholder="https://example.com/track?id=123"
+                value={formData.trackingLink || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, trackingLink: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -637,7 +673,7 @@ export default function EditStorePage() {
 
             {/* Show Cloudinary URL if uploaded */}
             {logoUrl && logoUploadMethod === 'url' && (
-              <div className="mt-2 p-2 bg-[#FFFBF0] rounded text-sm text-[#B8860B]">
+              <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
                 <strong>✅ Uploaded to Cloudinary:</strong>
                 <div className="mt-1 break-all text-xs">{logoUrl}</div>
               </div>

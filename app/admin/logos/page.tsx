@@ -358,7 +358,7 @@ export default function LogosPage() {
                         const fallbackInitial = logo.name?.charAt(0) || '?';
 
                         return (
-                          <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 border border-gray-200">
+                          <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 border border-gray-100">
                             {primaryUrl ? (
                               <img
                                 src={primaryUrl}

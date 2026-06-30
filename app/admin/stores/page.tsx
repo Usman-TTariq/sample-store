@@ -6,7 +6,6 @@ import {
   getStores,
   createStore,
   updateStore,
-  deleteStore,
   Store,
   isSlugUnique,
 } from '@/lib/services/storeService';
@@ -14,6 +13,7 @@ import { getCategories, Category } from '@/lib/services/categoryService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
 import StoreCouponsPriorityModal from './StoreCouponsPriorityModal';
 import { createClient } from '@/lib/supabase/client';
+import { getCategoryEmoji } from '@/lib/utils/categoryIcon';
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -32,8 +32,6 @@ export default function StoresPage() {
     layoutPosition: null,
     categoryId: null,
     trackingLink: '',
-    websiteUrl: '',
-    voucherText: '',
     country: 'US',
   });
   const [slugError, setSlugError] = useState<string>('');
@@ -54,24 +52,18 @@ export default function StoresPage() {
   const [couponStatsByStore, setCouponStatsByStore] = useState<
     Record<string, { total: number; active: number; inactive: number }>
   >({});
-  const [storeSearchQuery, setStoreSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const sortStoresByRecent = (list: Store[]): Store[] =>
+    [...list].sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (bTime !== aTime) return bTime - aTime;
+      return (b.storeId ?? 0) - (a.storeId ?? 0);
+    });
+
   // Only use Supabase stores to avoid duplicate numbering
-  const sortedStores = [...supabaseStores].sort((a, b) => {
-    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return bTime - aTime;
-  });
-  const filteredStores = storeSearchQuery.trim()
-    ? sortedStores.filter((store) => {
-        const q = storeSearchQuery.toLowerCase();
-        return (
-          store.name?.toLowerCase().includes(q) ||
-          store.slug?.toLowerCase().includes(q) ||
-          store.storeId?.toString().includes(q)
-        );
-      })
-    : sortedStores;
-  let newStores = filteredStores;
+  const newStores = sortStoresByRecent(supabaseStores);
 
   // Generate slug from name
   const generateSlug = (name: string): string => {
@@ -357,8 +349,8 @@ export default function StoresPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               name: categoryName,
-              icon_url: '📦', // Default icon
-              background_color: '#E5E7EB', // Default gray color
+              icon_url: getCategoryEmoji(categoryName),
+              background_color: '#E5E7EB',
             }),
           });
 
@@ -448,9 +440,24 @@ export default function StoresPage() {
 
   const fetchStores = async () => {
     setLoading(true);
-    const data = await getStores();
-    setStores(data);
-    setLoading(false);
+    try {
+      const [storesData, supabaseResponse] = await Promise.all([
+        getStores(),
+        fetch('/api/stores/supabase')
+          .then((res) => res.json())
+          .catch((err) => {
+            console.error('Error fetching Supabase stores:', err);
+            return { success: false, stores: [] };
+          }),
+      ]);
+      const supabaseList: Store[] = Array.isArray(supabaseResponse?.stores)
+        ? (supabaseResponse.stores as Store[])
+        : [];
+      setSupabaseStores(supabaseList);
+      setStores(storesData);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -561,10 +568,6 @@ export default function StoresPage() {
       slug: formData.slug || '',
       description: formData.description || '',
       logoUrl: logoUrlToSave,
-      websiteUrl: formData.websiteUrl || (storeUrl.trim()
-        ? (storeUrl.trim().startsWith('http') ? storeUrl.trim() : `https://${storeUrl.trim()}`)
-        : undefined),
-      voucherText: formData.voucherText || undefined,
       seoTitle: formData.seoTitle || undefined,
       seoDescription: formData.seoDescription || undefined,
       isTrending: formData.isTrending || false,
@@ -572,7 +575,6 @@ export default function StoresPage() {
       categoryId: formData.categoryId || null,
       trackingLink: formData.trackingLink || undefined,
       country: formData.country || 'US',
-      status: 'active',
     };
 
     const result = await createStore(storeData);
@@ -592,8 +594,6 @@ export default function StoresPage() {
         layoutPosition: null,
         categoryId: null,
         trackingLink: '',
-        websiteUrl: '',
-        voucherText: '',
         country: 'US',
       });
       setSlugError('');
@@ -606,11 +606,6 @@ export default function StoresPage() {
       setUploadingToCloudinary(false);
       setLogoUploadMethod('file');
       setFileInputKey(prev => prev + 1);
-      alert('Store created successfully! Check homepage after refresh.');
-    } else {
-      const msg = result.error?.message || 'Failed to create store';
-      alert(`Error: ${msg}`);
-      console.error('Store creation failed:', result.error);
     }
   };
 
@@ -624,44 +619,26 @@ export default function StoresPage() {
     }
   };
 
-  const handleDelete = async (id: string | undefined) => {
-    if (!id) return;
-    if (confirm('Are you sure you want to delete this store?')) {
-      // Check if it's a Supabase store
-      const isSupabaseStore = supabaseStores.some(s => s.id === id || s.slug === id);
+  const handleDelete = async (store: Store) => {
+    const deleteId = store.id || store.slug;
+    if (!deleteId) return;
 
-      if (isSupabaseStore) {
-        try {
-          const res = await fetch(`/api/stores/supabase/by-id/${encodeURIComponent(id)}`, {
-            method: 'DELETE',
-          });
-          const data = await res.json();
+    if (!confirm(`Delete "${store.name}"? This cannot be undone.`)) return;
 
-          if (res.ok && data.success) {
-            // Refresh stores
-            const [storesData, supabaseResponse] = await Promise.all([
-              getStores(),
-              fetch('/api/stores/supabase').then(res => res.json()).catch(err => ({ success: false, stores: [] }))
-            ]);
+    try {
+      const res = await fetch(`/api/stores/supabase/by-id/${encodeURIComponent(deleteId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
 
-            const supabaseList: Store[] = Array.isArray(supabaseResponse?.stores)
-              ? (supabaseResponse.stores as Store[])
-              : [];
-
-            setStores(storesData);
-            setSupabaseStores(supabaseList);
-          } else {
-            alert(`Failed to delete store from Supabase: ${data.error || 'Unknown error'}`);
-          }
-        } catch (err) {
-          console.error('Error deleting Supabase store:', err);
-          alert('Failed to delete store. Check console for details.');
-        }
+      if (res.ok && data.success) {
+        fetchStores();
       } else {
-        await deleteStore(id);
-        const data = await getStores();
-        setStores(data);
+        alert(`Failed to delete store: ${data.error || 'Unknown error'}`);
       }
+    } catch (err) {
+      console.error('Error deleting store:', err);
+      alert('Failed to delete store. Check console for details.');
     }
   };
 
@@ -748,7 +725,6 @@ export default function StoresPage() {
         setFormData({
           name: data.name || formData.name || '',
           description: data.description || formData.description || '',
-          websiteUrl: storeUrl.trim().startsWith('http') ? storeUrl.trim() : `https://${storeUrl.trim()}`,
           isTrending: formData.isTrending || false,
           layoutPosition: formData.layoutPosition || null,
         });
@@ -771,6 +747,18 @@ export default function StoresPage() {
     }
   };
 
+  const filteredStores = searchQuery.trim() === ''
+    ? newStores
+    : newStores.filter((store) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          store.name?.toLowerCase().includes(q) ||
+          store.slug?.toLowerCase().includes(q) ||
+          store.subStoreName?.toLowerCase().includes(q) ||
+          String(store.storeId ?? '').includes(q)
+        );
+      });
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -788,7 +776,7 @@ export default function StoresPage() {
               setUploadPreviewError(null);
               setShowUploadModal(true);
             }}
-            className="cursor-pointer bg-[#FFD23F] text-black px-4 py-2 rounded-lg hover:bg-black hover:text-white transition"
+            className="cursor-pointer bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
           >
             Upload Stores
           </button>
@@ -798,6 +786,54 @@ export default function StoresPage() {
           >
             {showForm ? 'Cancel' : 'Create New Store'}
           </button>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <label htmlFor="searchStores" className="block text-sm font-semibold text-gray-700 mb-2">
+            Search by Store Name, Slug, or Store ID
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 relative">
+              <input
+                id="searchStores"
+                type="text"
+                placeholder="Enter store name, slug, or ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium whitespace-nowrap"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="mt-2 text-sm text-gray-600">
+              Showing <span className="font-semibold">{filteredStores.length}</span> of{' '}
+              <span className="font-semibold">{newStores.length}</span> stores
+            </p>
+          )}
         </div>
       </div>
 
@@ -922,7 +958,7 @@ export default function StoresPage() {
                 <button
                   type="submit"
                   disabled={uploadingBulkStores}
-                  className="cursor-pointer px-4 py-2 rounded-lg bg-[#FFD23F] text-black hover:bg-black hover:text-white transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploadingBulkStores ? 'Uploading...' : 'Upload'}
                 </button>
@@ -1013,81 +1049,42 @@ export default function StoresPage() {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="country" className="block text-gray-700 text-sm font-semibold mb-2">
-                Country
-              </label>
-              <input
-                id="country"
-                name="country"
-                type="text"
-                placeholder="Country (e.g., US, UK, DE)"
-                value={formData.country || 'US'}
-                onChange={(e) =>
-                  setFormData({ ...formData, country: e.target.value.toUpperCase() })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                maxLength={2}
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                2-letter country code (e.g., US for United States, UK for United Kingdom, DE for Germany)
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="trackingLink" className="block text-gray-700 text-sm font-semibold mb-2">
-                Tracking Link (Affiliate URL)
-              </label>
-              <input
-                id="trackingLink"
-                name="trackingLink"
-                type="url"
-                placeholder="https://example.com/track?id=123"
-                value={formData.trackingLink || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, trackingLink: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Affiliate tracking URL for this store
-              </p>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="websiteUrl" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Website URL
+                <label htmlFor="country" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Country
                 </label>
                 <input
-                  id="websiteUrl"
-                  name="websiteUrl"
-                  type="url"
-                  placeholder="https://www.nike.com"
-                  value={formData.websiteUrl || ''}
+                  id="country"
+                  name="country"
+                  type="text"
+                  placeholder="US, UK, DE..."
+                  value={formData.country || 'US'}
                   onChange={(e) =>
-                    setFormData({ ...formData, websiteUrl: e.target.value })
+                    setFormData({ ...formData, country: e.target.value.toUpperCase() })
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  maxLength={2}
                 />
-                <p className="mt-1 text-xs text-gray-500">Used for store logo &amp; homepage cards</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  2-letter country code (e.g. US, UK, DE)
+                </p>
               </div>
               <div>
-                <label htmlFor="voucherText" className="block text-gray-700 text-sm font-semibold mb-2">
-                  Deal Text (homepage)
+                <label htmlFor="trackingLink" className="block text-gray-700 text-sm font-semibold mb-2">
+                  Tracking Link (Affiliate URL)
                 </label>
                 <input
-                  id="voucherText"
-                  name="voucherText"
+                  id="trackingLink"
+                  name="trackingLink"
                   type="text"
-                  placeholder="e.g. 25% Off Sitewide"
-                  value={formData.voucherText || ''}
+                  placeholder="https://example.com/track?id=123"
+                  value={formData.trackingLink || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, voucherText: e.target.value })
+                    setFormData({ ...formData, trackingLink: e.target.value })
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <p className="mt-1 text-xs text-gray-500">Shows on Featured &amp; Trending sections</p>
               </div>
             </div>
 
@@ -1288,7 +1285,7 @@ export default function StoresPage() {
 
               {/* Show Cloudinary URL if uploaded */}
               {logoUrl && logoUploadMethod === 'url' && (
-                <div className="mt-2 p-2 bg-[#FFFBF0] rounded text-sm text-[#B8860B]">
+                <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
                   <strong>✅ Uploaded to Cloudinary:</strong>
                   <div className="mt-1 break-all text-xs">{logoUrl}</div>
                 </div>
@@ -1310,7 +1307,9 @@ export default function StoresPage() {
             </div>
 
             <div>
-              <label htmlFor="description" className="sr-only">Description</label>
+              <label htmlFor="description" className="block text-gray-700 text-sm font-semibold mb-2">
+                Description
+              </label>
               <textarea
                 id="description"
                 name="description"
@@ -1478,50 +1477,22 @@ export default function StoresPage() {
 
       {loading ? (
         <div className="text-center py-12">Loading stores...</div>
-      ) : sortedStores.length === 0 ? (
+      ) : newStores.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <p className="text-gray-500">No stores created yet</p>
         </div>
+      ) : filteredStores.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <p className="text-gray-500">No stores found matching &quot;{searchQuery}&quot;</p>
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="mt-4 text-blue-600 hover:text-blue-800 underline"
+          >
+            Clear search
+          </button>
+        </div>
       ) : (
-        <>
-          <div className="mb-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-              <label htmlFor="storeSearch" className="block text-sm font-semibold text-gray-700 mb-2">
-                Search stores
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  id="storeSearch"
-                  type="text"
-                  placeholder="Filter by name, slug, or store ID..."
-                  value={storeSearchQuery}
-                  onChange={(e) => setStoreSearchQuery(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-                {storeSearchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setStoreSearchQuery('')}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium whitespace-nowrap"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              {storeSearchQuery && (
-                <p className="mt-2 text-sm text-gray-600">
-                  Showing <span className="font-semibold">{filteredStores.length}</span> of{' '}
-                  <span className="font-semibold">{sortedStores.length}</span> stores
-                </p>
-              )}
-            </div>
-          </div>
-
-          {newStores.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-              <p className="text-gray-500">No stores match your search</p>
-            </div>
-          ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -1560,7 +1531,7 @@ export default function StoresPage() {
                 </tr>
               </thead>
               <tbody>
-                {newStores.map((store) => (
+                {filteredStores.map((store) => (
                   <tr key={store.id} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4">
                       {store.logoUrl ? (
@@ -1634,7 +1605,7 @@ export default function StoresPage() {
                             Total: {couponStatsByStore[store.id].total}
                           </span>
                           <br />
-                          <span className="text-[#B8860B]">
+                          <span className="text-green-600">
                             Active: {couponStatsByStore[store.id].active}
                           </span>
                           <br />
@@ -1658,7 +1629,7 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${store.status === 'active'
-                        ? 'bg-[#FFFBF0] text-[#B8860B]'
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                         }`}>
                         {store.status || 'active'}
@@ -1682,18 +1653,19 @@ export default function StoresPage() {
                           onClick={() => setPriorityStore(store)}
                           className="px-3 py-1.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-700 hover:bg-indigo-200 whitespace-nowrap"
                         >
-                          View coupons
+                          Reorder coupons
                         </button>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Link
                             href={`/admin/stores/${store.id}`}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            className="inline-block bg-blue-100 text-blue-700 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-blue-200 text-center font-medium"
                           >
                             Edit
                           </Link>
                           <button
-                            onClick={() => handleDelete(store.id)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium cursor-pointer"
+                            type="button"
+                            onClick={() => handleDelete(store)}
+                            className="bg-red-100 text-red-700 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-red-200 font-medium"
                           >
                             Delete
                           </button>
@@ -1706,8 +1678,6 @@ export default function StoresPage() {
             </table>
           </div>
         </div>
-          )}
-        </>
       )}
       {priorityStore && (
         <StoreCouponsPriorityModal

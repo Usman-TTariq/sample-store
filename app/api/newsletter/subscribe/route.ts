@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getEmailSettings } from '@/lib/services/emailService'
-import { siteConfig } from '@/lib/seo/config'
 import { supabaseServer } from '@/lib/supabase/server'
 import nodemailer from 'nodemailer'
 
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
     const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587
     const smtpUser = process.env.SMTP_USER
     const smtpPassword = process.env.SMTP_PASSWORD
-    const smtpFrom = process.env.SMTP_FROM || smtpUser || `${siteConfig.name} <${siteConfig.emails.noreply}>`
+    const smtpFrom = process.env.SMTP_FROM || smtpUser || 'COUPACHU <noreply@COUPACHU.com>'
 
     if (smtpHost && smtpUser && smtpPassword) {
       try {

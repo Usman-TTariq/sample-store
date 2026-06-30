@@ -1,5 +1,18 @@
 import { supabaseServer } from '@/lib/supabase/server';
 
+interface SupabaseStoreRow {
+  store_id?: string | number;
+  store_name: string;
+  description: string;
+  store_logo_url?: string | null;
+  isTrending?: boolean | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  slug?: string | null;
+  subStoreName?: string | null;
+  tracking_link?: string | null;
+}
+
 export async function GET() {
   try {
     const supabase = supabaseServer();
@@ -17,27 +30,24 @@ export async function GET() {
       );
     }
 
-    const rows = (data || []) as Record<string, unknown>[];
+    const rows = (data || []) as any[];
 
     const stores = rows.map((row) => ({
       id: row.id?.toString(),
-      storeId: row.store_id ? (typeof row.store_id === 'number' ? row.store_id : parseInt(String(row.store_id), 10)) : undefined,
-      name: (row.store_name as string) || (row.name as string) || '',
-      subStoreName: (row.subStoreName as string) || (row.sub_store_name as string) || undefined,
-      slug: (row.slug as string) || undefined,
-      description: (row.description as string) || '',
-      logoUrl: (row.store_logo_url as string) || (row.logo_url as string) || undefined,
-      websiteUrl: (row.website_url as string) || undefined,
-      seoTitle: (row.seoTitle as string) || (row.seo_title as string) || undefined,
-      seoDescription: (row.seoDescription as string) || (row.seo_description as string) || undefined,
-      isTrending: (row.isTrending as boolean) ?? (row.featured as boolean) ?? false,
-      layoutPosition: (row.layout_position as number) || null,
-      categoryId: (row.category_id as string) || null,
-      couponOrder: (row.coupon_order as string[]) || null,
-      trackingLink: (row.tracking_link as string) || undefined,
-      country: (row.country as string) || undefined,
-      status: (row.status as string) || undefined,
-      createdAt: (row.created_at as string) || undefined,
+      storeId: row.store_id ? (typeof row.store_id === 'number' ? row.store_id : parseInt(row.store_id, 10)) : undefined,
+      name: row.store_name || row.name || '',
+      subStoreName: row.subStoreName || row.sub_store_name || undefined,
+      slug: row.slug || undefined,
+      description: row.description || '',
+      logoUrl: row.store_logo_url || row.logo_url || undefined,
+      seoTitle: row.seoTitle || row.seo_title || undefined,
+      seoDescription: row.seoDescription || row.seo_description || undefined,
+      isTrending: row.isTrending ?? row.featured ?? false,
+      layoutPosition: row.layout_position || null,
+      categoryId: row.category_id || null,
+      couponOrder: row.coupon_order || null,
+      trackingLink: row.tracking_link || undefined,
+      createdAt: row.created_at || undefined,
     }));
 
     return new Response(
@@ -56,3 +66,5 @@ export async function GET() {
     );
   }
 }
+
+

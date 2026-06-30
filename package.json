@@ -12,6 +12,9 @@
     "migrate:data": "node scripts/migrate-supabase.mjs",
     "migrate:check": "node scripts/migrate-supabase.mjs --check",
     "db:drop-merchant-network": "node scripts/drop-merchant-network.mjs",
+    "seed:extra-coupons": "node scripts/seed-extra-coupons.mjs",
+    "seed:articles": "node scripts/seed-articles.mjs",
+    "seed:premium-articles": "node scripts/seed-premium-articles.mjs",
     "seed": "node scripts/seed-sample-data.mjs"
   },
   "dependencies": {

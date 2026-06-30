@@ -6,7 +6,9 @@ import { getNews, NewsArticle } from '@/lib/services/newsService';
 import {
   filterArticlesForColumn,
   formatArticleDateUpper,
+  getArticleImageUrl,
   padArticles,
+  prioritizeArticlesWithImages,
   sortByNewest,
 } from '@/lib/utils/articleHome';
 
@@ -34,6 +36,8 @@ const COLUMNS = [
   },
 ] as const;
 
+const COLUMN_FALLBACK_INDEX = [1, 2, 3] as const;
+
 function ColumnImage({
   article,
   gradientIndex = 0,
@@ -41,10 +45,18 @@ function ColumnImage({
   article: NewsArticle;
   gradientIndex?: number;
 }) {
-  const [failed, setFailed] = useState(false);
+  const fallbackIndex = COLUMN_FALLBACK_INDEX[gradientIndex % COLUMN_FALLBACK_INDEX.length] ?? gradientIndex;
+  const fallback = getArticleImageUrl({ ...article, imageUrl: '' }, fallbackIndex);
+  const [src, setSrc] = useState(() => getArticleImageUrl(article, fallbackIndex));
+  const [exhausted, setExhausted] = useState(false);
   const gradient = COLUMN_GRADIENTS[gradientIndex % COLUMN_GRADIENTS.length];
 
-  if (!article.imageUrl || failed) {
+  useEffect(() => {
+    setSrc(getArticleImageUrl(article, fallbackIndex));
+    setExhausted(false);
+  }, [article.id, article.imageUrl, fallbackIndex]);
+
+  if (exhausted) {
     return (
       <div
         className={`h-full w-full bg-gradient-to-br ${gradient}`}
@@ -55,10 +67,13 @@ function ColumnImage({
 
   return (
     <img
-      src={article.imageUrl}
+      src={src}
       alt=""
       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-      onError={() => setFailed(true)}
+      onError={() => {
+        if (src !== fallback) setSrc(fallback);
+        else setExhausted(true);
+      }}
     />
   );
 }
@@ -140,7 +155,8 @@ export default function CategoryArticleColumns() {
   const columnData = COLUMNS.map((col) => {
     const matched = filterArticlesForColumn(articles, [...col.keywords]);
     const pool = matched.length >= 4 ? matched : matched.length > 0 ? matched : articles;
-    return padArticles(pool, 4, col.title);
+    const withImages = prioritizeArticlesWithImages(pool);
+    return padArticles(withImages, 4, col.title, articles);
   });
 
   return (

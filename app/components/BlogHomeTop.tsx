@@ -22,10 +22,10 @@ import {
 } from '@/lib/utils/articleHome';
 
 const SIDEBAR_GRADIENTS = [
-  'from-[#2d1b4e] to-[#5c3d8f]',
-  'from-[#1e3a5f] to-[#2d5a87]',
-  'from-[#1a4d3e] to-[#2d7a62]',
-  'from-[#6b3a2a] to-[#c45c3e]',
+  'from-[#111111] to-[#3d3210]',
+  'from-[#1a1608] to-[#5c4a14]',
+  'from-[#111111] to-[#B8860B]/70',
+  'from-[#2a2208] to-[#FFD23F]/35',
 ];
 
 function ArticleImage({
@@ -220,7 +220,7 @@ export default function BlogHomeTop() {
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px] gap-8 lg:gap-10 lg:items-start">
               <article className="min-w-0">
                 <Link href={featuredHref} className="group block">
-                  <div className="relative aspect-[16/9] w-full overflow-hidden rounded-sm mb-4 sm:mb-5 bg-[#2d1b4e]">
+                  <div className="relative aspect-[16/9] w-full overflow-hidden rounded-sm mb-4 sm:mb-5 bg-[#111111]">
                     <ArticleImage
                       key={`featured-${featured.id}-${activeCategory}`}
                       article={featured}

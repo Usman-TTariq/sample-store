@@ -13,9 +13,9 @@ import {
 } from '@/lib/utils/articleHome';
 
 const COLUMN_GRADIENTS = [
-  'from-[#1e3a5f] to-[#2d5a87]',
-  'from-[#2d1b4e] to-[#5c3d8f]',
-  'from-[#1a4d3e] to-[#2d7a62]',
+  'from-[#111111] to-[#3d3210]',
+  'from-[#1a1608] to-[#5c4a14]',
+  'from-[#111111] to-[#B8860B]/70',
 ];
 
 const COLUMNS = [

@@ -428,8 +428,8 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
         ref={bottomBarRef}
         className={`w-full hidden lg:block z-[100] transition-colors duration-300 ${
           isBottomBarPinned
-            ? 'fixed top-0 left-0 right-0 bg-black border-b border-gray-800 shadow-lg shadow-black/30'
-            : 'relative bg-white border-b border-gray-200'
+            ? 'fixed top-0 left-0 right-0 bg-[#111111] border-b border-[#FFD23F]/20 shadow-lg shadow-black/30'
+            : 'relative bg-[#FFFBF0] border-b border-[#FFD23F]/30'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -445,10 +445,10 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
                       isBottomBarPinned
                         ? isActive
                           ? 'text-[#FFD23F] hover:text-[#FFD23F]'
-                          : 'text-slate-300 hover:text-white'
+                          : 'text-gray-300 hover:text-[#FFD23F]'
                         : isActive
                           ? 'text-[#B8860B] hover:text-[#E6BC2E]'
-                          : 'text-black hover:text-[#E6BC2E]'
+                          : 'text-[#111111] hover:text-[#B8860B]'
                     }`}
                   >
                     {link.name}
@@ -457,7 +457,7 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
                         isBottomBarPinned
                           ? activeDropdown === link.name
                             ? 'rotate-180 text-[#FFD23F]'
-                            : 'text-slate-400 group-hover:text-white'
+                            : 'text-gray-400 group-hover:text-[#FFD23F]'
                           : activeDropdown === link.name
                             ? 'rotate-180 text-[#B8860B]'
                             : 'text-gray-500'
@@ -478,7 +478,7 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
               <Link
                 href="/submit-coupon"
                 className={`text-[13px] font-bold transition-colors uppercase tracking-wide ${
-                  isBottomBarPinned ? 'text-slate-300 hover:text-white' : 'text-black hover:text-[#E6BC2E]'
+                  isBottomBarPinned ? 'text-gray-300 hover:text-[#FFD23F]' : 'text-[#111111] hover:text-[#B8860B]'
                 }`}
               >
                 Submit Coupon
@@ -486,7 +486,7 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
               <Link
                 href="/support"
                 className={`text-[13px] font-bold transition-colors uppercase tracking-wide ${
-                  isBottomBarPinned ? 'text-slate-300 hover:text-white' : 'text-black hover:text-[#E6BC2E]'
+                  isBottomBarPinned ? 'text-gray-300 hover:text-[#FFD23F]' : 'text-[#111111] hover:text-[#B8860B]'
                 }`}
               >
                 Support & FAQs

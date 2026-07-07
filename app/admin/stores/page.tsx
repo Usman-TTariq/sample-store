@@ -13,8 +13,10 @@ import {
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { extractOriginalCloudinaryUrl, isCloudinaryUrl } from '@/lib/utils/cloudinary';
 import StoreCouponsPriorityModal from './StoreCouponsPriorityModal';
+import StoreLogo from '@/app/components/StoreLogo';
 import { createClient } from '@/lib/supabase/client';
 import { getCategoryEmoji } from '@/lib/utils/categoryIcon';
+import { inferCountryCode } from '@/lib/utils/storeCountry';
 
 export default function StoresPage() {
   const router = useRouter();
@@ -22,7 +24,9 @@ export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(
+    () => searchParams.get('create') === '1'
+  );
   const [formData, setFormData] = useState<Partial<Store>>({
     name: '',
     subStoreName: '',
@@ -56,6 +60,8 @@ export default function StoresPage() {
     Record<string, { total: number; active: number; inactive: number }>
   >({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
+  const [deletingSelected, setDeletingSelected] = useState(false);
 
   const sortStoresByRecent = (list: Store[]): Store[] =>
     [...list].sort((a, b) => {
@@ -269,11 +275,10 @@ export default function StoresPage() {
         // Skip empty rows
         if (!store_name.trim()) return null;
 
-        // Description is optional
         const description =
           idxDescription !== -1 && row[idxDescription]?.trim()
             ? row[idxDescription].trim()
-            : null;
+            : '';
 
         const logoUrl = idxLogoUrl !== -1 ? (row[idxLogoUrl] || null) : null;
 
@@ -282,6 +287,8 @@ export default function StoresPage() {
           console.log(`Store: ${store_name}, Logo URL: ${logoUrl}`);
         }
 
+        const slugValue = idxSlug !== -1 ? (row[idxSlug] || null) : null;
+
         return {
           name: store_name,
           description,
@@ -289,18 +296,21 @@ export default function StoresPage() {
           website_url: idxStoreUrl !== -1 ? (row[idxStoreUrl] || null) : null,
           tracking_link: idxTrackingLink !== -1 ? (row[idxTrackingLink] || null) : null,
           category_text: idxCategory !== -1 ? (row[idxCategory] || null) : null,
-          country: idxCountry !== -1 ? (row[idxCountry] || 'US') : 'US',
+          country:
+            idxCountry !== -1 && row[idxCountry]?.trim()
+              ? row[idxCountry].trim().toUpperCase()
+              : inferCountryCode(slugValue, store_name) || 'US',
           status: idxStatus !== -1 ? (normalizeBoolean(row[idxStatus]) ? 'active' : 'inactive') : 'active',
           featured: idxFeatured !== -1 ? normalizeBoolean(row[idxFeatured]) : false,
           seo_title: idxSeoTitle !== -1 ? (row[idxSeoTitle] || null) : null,
           seo_description: idxSeoDescription !== -1 ? (row[idxSeoDescription] || null) : null,
-          slug: idxSlug !== -1 ? (row[idxSlug] || null) : null,
+          slug: slugValue,
           sub_store_name: idxSubStoreName !== -1 ? (row[idxSubStoreName] || null) : null,
         };
       })
       .filter((row) => row !== null) as {
         name: string;
-        description: string | null;
+        description: string;
         logo_url?: string | null;
         website_url?: string | null;
         tracking_link?: string | null;
@@ -516,6 +526,13 @@ export default function StoresPage() {
   }, []);
 
   useEffect(() => {
+    setShowForm(searchParams.get('create') === '1');
+  }, [searchParams]);
+
+  const buildStoresListHref = (options?: { create?: boolean }) =>
+    options?.create ? '/admin/stores?create=1' : '/admin/stores';
+
+  useEffect(() => {
     const openCouponsId = searchParams.get('openCoupons')?.trim();
     if (!openCouponsId || loading || supabaseStores.length === 0) return;
 
@@ -584,7 +601,7 @@ export default function StoresPage() {
       name: formData.name || '',
       subStoreName: formData.subStoreName || undefined,
       slug: formData.slug || '',
-      description: formData.description?.trim() || undefined,
+      description: formData.description || '',
       logoUrl: logoUrlToSave,
       seoTitle: formData.seoTitle || undefined,
       seoDescription: formData.seoDescription || undefined,
@@ -600,6 +617,7 @@ export default function StoresPage() {
     if (result.success) {
       fetchStores();
       setShowForm(false);
+      router.replace('/admin/stores');
       setFormData({
         name: '',
         subStoreName: '',
@@ -650,6 +668,11 @@ export default function StoresPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        setSelectedStoreIds((prev) => {
+          const next = new Set(prev);
+          if (store.id) next.delete(store.id);
+          return next;
+        });
         fetchStores();
       } else {
         alert(`Failed to delete store: ${data.error || 'Unknown error'}`);
@@ -712,6 +735,7 @@ export default function StoresPage() {
 
       if (response.ok && result.success) {
         alert(`Successfully deleted ${result.count || 'all'} stores.`);
+        setSelectedStoreIds(new Set());
         fetchStores();
       } else {
         alert(`Failed to delete stores: ${result.error || 'Unknown error'}`);
@@ -719,6 +743,61 @@ export default function StoresPage() {
     } catch (error) {
       console.error('Error deleting all stores:', error);
       alert('Failed to delete stores. Check console for details.');
+    }
+  };
+
+  const toggleStoreSelection = (id: string) => {
+    setSelectedStoreIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllStoresOnPage = () => {
+    const pageIds = filteredStores.map((s) => s.id).filter((id): id is string => Boolean(id));
+    const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedStoreIds.has(id));
+    setSelectedStoreIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) pageIds.forEach((id) => next.delete(id));
+      else pageIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    const ids = [...selectedStoreIds];
+    if (!ids.length) {
+      alert('Please select at least one store to delete.');
+      return;
+    }
+
+    if (!confirm(`Delete ${ids.length} selected store(s)? This cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingSelected(true);
+    try {
+      const response = await fetch('/api/stores/delete-selected', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        alert(`Successfully deleted ${result.count ?? ids.length} store(s).`);
+        setSelectedStoreIds(new Set());
+        fetchStores();
+      } else {
+        alert(`Failed to delete stores: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting selected stores:', error);
+      alert('Failed to delete selected stores. Check console for details.');
+    } finally {
+      setDeletingSelected(false);
     }
   };
 
@@ -742,7 +821,7 @@ export default function StoresPage() {
         // Auto-populate form fields
         setFormData({
           name: data.name || formData.name || '',
-          description: data.description?.trim() || formData.description?.trim() || '',
+          description: data.description || formData.description || '',
           isTrending: formData.isTrending || false,
           layoutPosition: formData.layoutPosition || null,
         });
@@ -777,11 +856,24 @@ export default function StoresPage() {
         );
       });
 
+  const allStoresOnPageSelected =
+    filteredStores.length > 0 &&
+    filteredStores.every((store) => store.id && selectedStoreIds.has(store.id));
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Manage Stores</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleDeleteSelected}
+            disabled={selectedStoreIds.size === 0 || deletingSelected}
+            className="cursor-pointer bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {deletingSelected
+              ? 'Deleting...'
+              : `Delete Selected${selectedStoreIds.size ? ` (${selectedStoreIds.size})` : ''}`}
+          </button>
           <button
             onClick={handleDeleteAll}
             className="cursor-pointer bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
@@ -798,12 +890,21 @@ export default function StoresPage() {
           >
             Upload Stores
           </button>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-          >
-            {showForm ? 'Cancel' : 'Create New Store'}
-          </button>
+          {showForm ? (
+            <Link
+              href={buildStoresListHref()}
+              className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition inline-block text-center"
+            >
+              Cancel
+            </Link>
+          ) : (
+            <Link
+              href={buildStoresListHref({ create: true })}
+              className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition inline-block text-center"
+            >
+              Create New Store
+            </Link>
+          )}
         </div>
       </div>
 
@@ -1326,7 +1427,7 @@ export default function StoresPage() {
 
             <div>
               <label htmlFor="description" className="block text-gray-700 text-sm font-semibold mb-2">
-                Description <span className="font-normal text-gray-500">(Optional)</span>
+                Description (Optional)
               </label>
               <textarea
                 id="description"
@@ -1515,6 +1616,15 @@ export default function StoresPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
+                  <th className="px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={allStoresOnPageSelected}
+                      onChange={toggleSelectAllStoresOnPage}
+                      aria-label="Select all stores on this page"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                     Logo
                   </th>
@@ -1550,52 +1660,27 @@ export default function StoresPage() {
               <tbody>
                 {filteredStores.map((store) => (
                   <tr key={store.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(store.id && selectedStoreIds.has(store.id))}
+                        onChange={() => store.id && toggleStoreSelection(store.id)}
+                        disabled={!store.id}
+                        aria-label={`Select store ${store.name}`}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
                     <td className="px-6 py-4">
-                      {store.logoUrl ? (
-                        <div className="relative">
-                          <img
-                            src={store.logoUrl}
-                            alt={store.name}
-                            title={`Logo: ${store.logoUrl}`}
-                            className="h-12 w-12 object-contain bg-white rounded p-1"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              // Try favicon from slug
-                              if (store.slug && !target.src.includes('google.com/s2/favicons')) {
-                                target.src = `https://www.google.com/s2/favicons?domain=${store.slug}.com&sz=128`;
-                              } else {
-                                // Use placeholder with first letter
-                                target.style.display = 'none';
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  parent.innerHTML = `<div class="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center text-white text-lg font-bold shadow-md">${store.name?.charAt(0).toUpperCase() || '?'}</div>`;
-                                }
-                              }
-                            }}
-                          />
-                        </div>
-                      ) : store.slug ? (
-                        <div className="relative">
-                          <img
-                            src={`https://www.google.com/s2/favicons?domain=${store.slug.includes('.') ? store.slug : store.slug.match(/-([a-z]{2})$/) ? store.slug.replace(/-([a-z]{2})$/, '.$1') : `${store.slug}.com`}&sz=128`}
-                            alt={store.name}
-                            title={`Favicon from: ${store.slug}.com`}
-                            className="h-12 w-12 object-contain bg-white rounded p-1"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `<div class="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center text-white text-lg font-bold shadow-md">${store.name?.charAt(0).toUpperCase() || '?'}</div>`;
-                              }
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center text-white text-lg font-bold shadow-md">
-                          {store.name?.charAt(0).toUpperCase() || '?'}
-                        </div>
-                      )}
+                      <StoreLogo
+                        name={store.name}
+                        logoUrl={store.logoUrl}
+                        websiteUrl={store.websiteUrl}
+                        trackingLink={store.trackingLink}
+                        slug={store.slug}
+                        className="h-12 w-12"
+                        imgClassName="h-12 w-12 object-contain bg-white rounded p-1"
+                        fallbackClassName="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center text-white text-lg font-bold shadow-md"
+                      />
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700 font-mono">
                       {store.storeId || '-'}

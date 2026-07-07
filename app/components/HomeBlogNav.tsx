@@ -75,7 +75,9 @@ export default function HomeBlogNav({
     <>
       <nav
         ref={navRef}
-        className={`w-full bg-black text-white border-b border-gray-800/80 ${
+        className={`w-full bg-black text-white border-b ${
+          isPinned ? 'border-[#FFD23F]/20' : 'border-gray-800/80'
+        } ${
           isPinned
             ? 'fixed top-0 left-0 right-0 z-50 shadow-lg shadow-black/30'
             : 'relative z-40'
@@ -103,7 +105,7 @@ export default function HomeBlogNav({
                           setOpenDropdown(isOpen ? null : item.id);
                         }}
                         className={`flex items-center gap-1 h-9 text-sm font-medium transition-colors ${
-                          isActive ? 'text-white' : 'text-slate-300 hover:text-white'
+                          isActive ? 'text-[#FFD23F]' : 'text-gray-400 hover:text-white'
                         }`}
                       >
                         {item.label}
@@ -116,7 +118,7 @@ export default function HomeBlogNav({
                         type="button"
                         onClick={() => onNavChange(item.id, item.categoryId)}
                         className={`h-9 text-sm font-medium transition-colors ${
-                          isActive ? 'text-white' : 'text-slate-300 hover:text-white'
+                          isActive ? 'text-[#FFD23F]' : 'text-gray-400 hover:text-white'
                         }`}
                       >
                         {item.label}
@@ -157,7 +159,7 @@ export default function HomeBlogNav({
               <li>
                 <Link
                   href="/promotions"
-                  className="flex items-center h-9 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                  className="flex items-center h-9 text-sm font-medium text-gray-400 hover:text-[#FFD23F] transition-colors"
                 >
                   Promotions
                 </Link>
@@ -171,7 +173,7 @@ export default function HomeBlogNav({
               >
                 Contact Us
               </Link>
-              <time className="hidden md:block text-sm text-slate-400 whitespace-nowrap leading-none">
+              <time className="hidden md:block text-sm text-gray-500 whitespace-nowrap leading-none">
                 {today}
               </time>
             </div>

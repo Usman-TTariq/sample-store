@@ -28,6 +28,19 @@ export interface Coupon {
   updatedAt?: string
 }
 
+function mapCouponStoreIds(item: {
+  store_ids?: string[] | null
+  store_id?: string | null
+}): string[] {
+  if (Array.isArray(item.store_ids) && item.store_ids.length > 0) {
+    return item.store_ids.map(String)
+  }
+  if (item.store_id != null && item.store_id !== '') {
+    return [String(item.store_id)]
+  }
+  return []
+}
+
 export async function createCoupon(coupon: Omit<Coupon, 'id'>, logoFile?: File) {
   const supabase = createClient()
   try {
@@ -137,7 +150,7 @@ export async function getCoupons(): Promise<Coupon[]> {
       id: item.id,
       code: item.code,
       storeName: item.store_name,
-      storeIds: item.store_ids || [],
+      storeIds: mapCouponStoreIds(item),
       discount: item.discount_value,
       discountType: item.discount_type,
       description: item.description,
@@ -182,7 +195,7 @@ export async function getActiveCoupons(): Promise<Coupon[]> {
       id: item.id,
       code: item.code,
       storeName: item.store_name,
-      storeIds: item.store_ids || [],
+      storeIds: mapCouponStoreIds(item),
       discount: item.discount_value,
       discountType: item.discount_type,
       description: item.description,
@@ -340,7 +353,7 @@ export async function getCouponsByCategoryId(categoryId: string): Promise<Coupon
       id: item.id,
       code: item.code,
       storeName: item.store_name,
-      storeIds: item.store_ids || [],
+      storeIds: mapCouponStoreIds(item),
       discount: item.discount_value,
       discountType: item.discount_type,
       description: item.description,
@@ -386,7 +399,7 @@ export async function getCouponsByStoreName(storeName: string): Promise<Coupon[]
       id: item.id,
       code: item.code,
       storeName: item.store_name,
-      storeIds: item.store_ids || [],
+      storeIds: mapCouponStoreIds(item),
       discount: item.discount_value,
       discountType: item.discount_type,
       description: item.description,
@@ -432,7 +445,7 @@ export async function getCouponsByStoreId(storeId: string): Promise<Coupon[]> {
       id: item.id,
       code: item.code,
       storeName: item.store_name,
-      storeIds: item.store_ids || [],
+      storeIds: mapCouponStoreIds(item),
       discount: item.discount_value,
       discountType: item.discount_type,
       description: item.description,
@@ -691,7 +704,7 @@ export async function getLatestCoupons(): Promise<(Coupon | null)[]> {
       id: item.id,
       code: item.code,
       storeName: item.store_name,
-      storeIds: item.store_ids || [],
+      storeIds: mapCouponStoreIds(item),
       discount: item.discount_value,
       discountType: item.discount_type,
       description: item.description,

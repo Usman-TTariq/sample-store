@@ -25,7 +25,9 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(
+    () => urlSearchParams.get('create') === '1'
+  );
   const [formData, setFormData] = useState<Partial<Coupon>>({
     code: '',
     storeName: '',
@@ -74,6 +76,8 @@ export default function CouponsPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadPreviewRows, setUploadPreviewRows] = useState<string[][]>([]);
   const [uploadPreviewError, setUploadPreviewError] = useState<string | null>(null);
+  const [selectedCouponIds, setSelectedCouponIds] = useState<Set<string>>(new Set());
+  const [deletingSelected, setDeletingSelected] = useState(false);
 
   const parseCsv = (text: string): string[][] => {
     const rows: string[][] = [];
@@ -201,54 +205,6 @@ export default function CouponsPage() {
     return ['true', '1', 'yes', 'y', 't'].includes(v);
   };
 
-  const normalizeName = (value: string) =>
-    value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[^\w\s.-]/g, '');
-
-  const resolveStoreForUpload = (
-    storeName: string,
-    csvStoreId: number,
-    url: string | null,
-    storesList: Store[]
-  ): { uuid: string; name: string; storeId?: number } | null => {
-    const needle = storeName ? normalizeName(storeName) : '';
-
-    if (needle) {
-      const exact = storesList.find((s) => s.name && normalizeName(s.name) === needle);
-      if (exact?.id) return { uuid: exact.id, name: exact.name, storeId: exact.storeId };
-
-      const partial = storesList.find((s) => {
-        if (!s.name) return false;
-        const hay = normalizeName(s.name);
-        return hay.includes(needle) || needle.includes(hay);
-      });
-      if (partial?.id) return { uuid: partial.id, name: partial.name, storeId: partial.storeId };
-    }
-
-    if (csvStoreId) {
-      const byId = storesList.find((s) => s.storeId === csvStoreId);
-      if (byId?.id) return { uuid: byId.id, name: byId.name, storeId: byId.storeId };
-    }
-
-    if (url?.trim()) {
-      try {
-        const host = new URL(url.trim()).hostname.replace(/^www\./, '').toLowerCase();
-        const byUrl = storesList.find((s) => {
-          if (!s.websiteUrl) return false;
-          try {
-            return new URL(s.websiteUrl).hostname.replace(/^www\./, '').toLowerCase() === host;
-          } catch {
-            return false;
-          }
-        });
-        if (byUrl?.id) return { uuid: byUrl.id, name: byUrl.name, storeId: byUrl.storeId };
-      } catch {
-        // ignore invalid URL
-      }
-    }
-
-    return null;
-  };
-
   const handleBulkUpload = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -350,7 +306,9 @@ export default function CouponsPage() {
         const rowNum = index + 2;
         const csvStoreId = idxStoreId !== -1 ? parseInt(row[idxStoreId] || '0', 10) || 0 : 0;
         const storeName = row[idxStoreName]?.toString().trim() || '';
-        const title = row[idxTitle]?.toString().trim() || '';
+        const title = idxTitle !== -1 ? row[idxTitle]?.toString().trim() || '' : '';
+        const description =
+          idxDescription !== -1 ? row[idxDescription]?.toString().trim() || '' : '';
         const couponTypeRaw = row[idxCouponType]?.toString().trim().toLowerCase() || '';
         const couponType = couponTypeRaw === 'deal' ? 'deal' : couponTypeRaw === 'code' ? 'code' : '';
         const code = row[idxCode]?.toString().trim() || '';
@@ -377,16 +335,9 @@ export default function CouponsPage() {
           return null;
         }
 
-        const resolved = resolveStoreForUpload(storeName, csvStoreId, url, storesList);
-        const description =
-          idxDescription !== -1 && row[idxDescription]
-            ? row[idxDescription]
-            : title;
-
         return {
-          storeUuid: resolved?.uuid,
-          store_id: resolved?.storeId ?? (csvStoreId || null),
-          storeName: storeName || resolved?.name,
+          store_id: csvStoreId || null,
+          storeName,
           title,
           couponType,
           code: couponType === 'deal' ? null : code,
@@ -484,8 +435,9 @@ export default function CouponsPage() {
   const fetchCoupons = async () => {
     setLoading(true);
     try {
-      const couponsData = await getCoupons();
+      const [couponsData, storesData] = await Promise.all([getCoupons(), getStores()]);
       setCoupons(sortCouponsByRecentActivity(couponsData));
+      setStores(storesData);
     } catch (err) {
       console.error('Error fetching coupons in admin fetchCoupons:', err);
       setCoupons([]);
@@ -824,7 +776,6 @@ export default function CouponsPage() {
     if (!id) return;
     if (confirm('Are you sure you want to delete this coupon?')) {
       try {
-        // Try deleting from Supabase first (no-op for Firebase-only coupons)
         try {
           await fetch(`/api/coupons/supabase/by-id/${encodeURIComponent(id)}`, {
             method: 'DELETE',
@@ -833,11 +784,70 @@ export default function CouponsPage() {
           console.error('Error deleting Supabase coupon (ignored if not Supabase):', supabaseErr);
         }
 
-        // Always delete from Firebase as well (no-op if not there)
         await deleteCoupon(id);
+        setSelectedCouponIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
       } finally {
         fetchCoupons();
       }
+    }
+  };
+
+  const toggleCouponSelection = (id: string) => {
+    setSelectedCouponIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllCouponsOnPage = () => {
+    const pageIds = paginatedCoupons.map((c) => c.id).filter((id): id is string => Boolean(id));
+    const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedCouponIds.has(id));
+    setSelectedCouponIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) pageIds.forEach((id) => next.delete(id));
+      else pageIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    const ids = [...selectedCouponIds];
+    if (!ids.length) {
+      alert('Please select at least one coupon to delete.');
+      return;
+    }
+
+    if (!confirm(`Delete ${ids.length} selected coupon(s)? This cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingSelected(true);
+    try {
+      const response = await fetch('/api/coupons/delete-selected', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        alert(`Successfully deleted ${result.count ?? ids.length} coupon(s).`);
+        setSelectedCouponIds(new Set());
+        fetchCoupons();
+      } else {
+        alert(`Failed to delete coupons: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting selected coupons:', error);
+      alert('Failed to delete selected coupons. Check console for details.');
+    } finally {
+      setDeletingSelected(false);
     }
   };
 
@@ -934,6 +944,7 @@ export default function CouponsPage() {
 
       if (response.ok && result.success) {
         alert(`Successfully deleted ${result.count ?? 'all'} coupons.`);
+        setSelectedCouponIds(new Set());
         fetchCoupons();
       } else {
         alert(`Failed to delete coupons: ${result.error || 'Unknown error'}`);
@@ -950,10 +961,25 @@ export default function CouponsPage() {
     const trimmed = searchQuery.trim();
     if (trimmed) params.set('search', trimmed);
     if (currentPage > 1) params.set('page', String(currentPage));
+    if (showForm) params.set('create', '1');
     const qs = params.toString();
     const nextUrl = qs ? `${pathname}?${qs}` : pathname;
     router.replace(nextUrl, { scroll: false });
-  }, [searchQuery, currentPage, pathname, router]);
+  }, [searchQuery, currentPage, showForm, pathname, router]);
+
+  useEffect(() => {
+    setShowForm(urlSearchParams.get('create') === '1');
+  }, [urlSearchParams]);
+
+  const buildCouponsListHref = (options?: { create?: boolean }) => {
+    const params = new URLSearchParams();
+    const trimmed = searchQuery.trim();
+    if (trimmed) params.set('search', trimmed);
+    if (currentPage > 1) params.set('page', String(currentPage));
+    if (options?.create) params.set('create', '1');
+    const qs = params.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  };
 
   const buildEditCouponHref = (couponId: string) => {
     const params = new URLSearchParams();
@@ -965,13 +991,15 @@ export default function CouponsPage() {
   };
 
   const getCouponStoreDisplayName = (coupon: Coupon): string => {
-    if (coupon.storeIds && coupon.storeIds.length > 0) {
-      const linkedNames = coupon.storeIds
-        .map((storeId) => stores.find((s) => s.id === storeId)?.name)
+    const linkedStoreIds = coupon.storeIds?.filter(Boolean) ?? [];
+    if (linkedStoreIds.length > 0) {
+      const linkedNames = linkedStoreIds
+        .map((storeId) => stores.find((s) => String(s.id) === String(storeId))?.name)
         .filter((name): name is string => Boolean(name));
       if (linkedNames.length > 0) {
         return linkedNames.join(', ');
       }
+      return 'N/A';
     }
     return coupon.storeName || 'N/A';
   };
@@ -993,12 +1021,24 @@ export default function CouponsPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+  const allCouponsOnPageSelected =
+    paginatedCoupons.length > 0 &&
+    paginatedCoupons.every((coupon) => coupon.id && selectedCouponIds.has(coupon.id));
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Manage Coupons</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleDeleteSelected}
+            disabled={selectedCouponIds.size === 0 || deletingSelected}
+            className="cursor-pointer bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {deletingSelected
+              ? 'Deleting...'
+              : `Delete Selected${selectedCouponIds.size ? ` (${selectedCouponIds.size})` : ''}`}
+          </button>
           <button
             onClick={handleDeleteAll}
             className="cursor-pointer bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition whitespace-nowrap"
@@ -1015,12 +1055,21 @@ export default function CouponsPage() {
           >
             Upload Coupons
           </button>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
-          >
-            {showForm ? 'Cancel' : 'Create New Coupon'}
-          </button>
+          {showForm ? (
+            <Link
+              href={buildCouponsListHref()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap inline-block text-center"
+            >
+              Cancel
+            </Link>
+          ) : (
+            <Link
+              href={buildCouponsListHref({ create: true })}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap inline-block text-center"
+            >
+              Create New Coupon
+            </Link>
+          )}
         </div>
       </div>
 
@@ -1073,11 +1122,11 @@ export default function CouponsPage() {
                     <li><span className="font-semibold">Store Name</span> — store name (auto-created if missing)</li>
                     <li><span className="font-semibold">couponType</span> — <code className="text-[11px]">code</code> or <code className="text-[11px]">deal</code></li>
                     <li><span className="font-semibold">code</span> — required when couponType is <code className="text-[11px]">code</code>; leave empty for deals</li>
-                    <li><span className="font-semibold">title</span> — offer title shown on the coupon card</li>
+                    <li><span className="font-semibold">title</span> — offer text shown on the coupon card (e.g. 10% off first order)</li>
                   </ul>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Optional: Traking link / Tracking link / url (saved on coupon + auto-created store), description, discount, expiryDate, etc.
+                  Optional: Traking link / Tracking link / url, description, discount, expiryDate, etc.
                   Expiry auto-set to 31 Dec if empty. Get Code / Get Deal are automatic.
                 </p>
               </div>
@@ -1966,6 +2015,15 @@ export default function CouponsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
+                  <th className="px-3 sm:px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={allCouponsOnPageSelected}
+                      onChange={toggleSelectAllCouponsOnPage}
+                      aria-label="Select all coupons on this page"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold">
                     Store Name
                   </th>
@@ -2001,6 +2059,16 @@ export default function CouponsPage() {
               <tbody>
                 {paginatedCoupons.map((coupon) => (
                   <tr key={coupon.id} className="border-b hover:bg-gray-50">
+                    <td className="px-3 sm:px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(coupon.id && selectedCouponIds.has(coupon.id))}
+                        onChange={() => coupon.id && toggleCouponSelection(coupon.id)}
+                        disabled={!coupon.id}
+                        aria-label={`Select coupon ${coupon.code || coupon.id}`}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
                     <td className="px-4 sm:px-6 py-4 text-sm font-semibold text-gray-900">
                       {getCouponStoreDisplayName(coupon)}
                     </td>

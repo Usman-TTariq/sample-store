@@ -1,4 +1,4 @@
--- Coupachu: full schema matching production (old project)
+-- SaveKlick: full schema matching production
 -- Run once in NEW Supabase → SQL Editor → Run
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

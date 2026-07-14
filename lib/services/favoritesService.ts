@@ -13,14 +13,23 @@ export interface FavoriteCoupon {
   addedAt: number; // timestamp
 }
 
-const FAVORITES_KEY = 'coupachu_favorites';
+const FAVORITES_KEY = 'saveklick_favorites';
+const LEGACY_FAVORITES_KEY = 'coupachu_favorites';
 
 // Get all favorites
 export function getFavorites(): FavoriteCoupon[] {
   if (typeof window === 'undefined') return [];
 
   try {
-    const stored = localStorage.getItem(FAVORITES_KEY);
+    let stored = localStorage.getItem(FAVORITES_KEY);
+    if (!stored) {
+      const legacy = localStorage.getItem(LEGACY_FAVORITES_KEY);
+      if (legacy) {
+        localStorage.setItem(FAVORITES_KEY, legacy);
+        localStorage.removeItem(LEGACY_FAVORITES_KEY);
+        stored = legacy;
+      }
+    }
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
     console.error('Error getting favorites:', error);

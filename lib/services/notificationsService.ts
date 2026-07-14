@@ -11,15 +11,40 @@ export interface Notification {
   link?: string; // Optional link to navigate
 }
 
-const NOTIFICATIONS_KEY = 'coupachu_notifications';
+const NOTIFICATIONS_KEY = 'saveklick_notifications';
+const LEGACY_NOTIFICATIONS_KEY = 'coupachu_notifications';
+
+function migrateAndRebrand(notifications: Notification[]): Notification[] {
+  return notifications.map((n) => ({
+    ...n,
+    title: n.title.replace(/COUPACHU/gi, 'SaveKlick').replace(/Coupachu/g, 'SaveKlick'),
+    message: n.message.replace(/COUPACHU/gi, 'SaveKlick').replace(/Coupachu/g, 'SaveKlick'),
+  }));
+}
 
 // Get all notifications
 export function getNotifications(): Notification[] {
   if (typeof window === 'undefined') return [];
 
   try {
-    const stored = localStorage.getItem(NOTIFICATIONS_KEY);
-    return stored ? JSON.parse(stored) : [];
+    let stored = localStorage.getItem(NOTIFICATIONS_KEY);
+    if (!stored) {
+      const legacy = localStorage.getItem(LEGACY_NOTIFICATIONS_KEY);
+      if (legacy) {
+        const migrated = migrateAndRebrand(JSON.parse(legacy) as Notification[]);
+        localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(migrated));
+        localStorage.removeItem(LEGACY_NOTIFICATIONS_KEY);
+        return migrated;
+      }
+      return [];
+    }
+
+    const raw = JSON.parse(stored) as Notification[];
+    const parsed = migrateAndRebrand(raw);
+    if (JSON.stringify(raw) !== JSON.stringify(parsed)) {
+      localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(parsed));
+    }
+    return parsed;
   } catch (error) {
     console.error('Error getting notifications:', error);
     return [];
@@ -112,7 +137,7 @@ export function initializeSampleNotifications(): void {
   const existing = getNotifications();
   if (existing.length === 0) {
     addNotification({
-      title: 'Welcome to COUPACHU!',
+      title: 'Welcome to SaveKlick!',
       message: 'Discover amazing deals and save money with our exclusive coupons.',
       type: 'info'
     });

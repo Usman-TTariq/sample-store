@@ -76,8 +76,8 @@ export default function Footer() {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm font-semibold mb-1">Send Us Email</p>
-                  <a href="mailto:demo@gmail.com" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
-                    demo@gmail.com
+                  <a href={`mailto:${siteConfig.emails.contact}`} className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
+                    {siteConfig.emails.contact}
                   </a>
                 </div>
                 <div>

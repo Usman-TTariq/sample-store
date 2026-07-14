@@ -15,7 +15,7 @@ import { useSearchSuggestions } from "@/lib/hooks/useSearchSuggestions";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   Search, Menu, X, ChevronDown, User,
-  Heart, Moon, Phone
+  Heart, Phone
 } from "lucide-react";
 
 // Helper function to get favicon URL from store data
@@ -357,7 +357,6 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button className="hidden sm:block hover:text-[#FFD23F] transition-colors text-white"><Moon className="w-5 h-5" /></button>
                 <Link href="/favorites" className="relative hover:text-[#FFD23F] transition-colors text-white">
                   <Heart className="w-5 h-5" />
                   {favoritesCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#FFD23F] rounded-full"></span>}

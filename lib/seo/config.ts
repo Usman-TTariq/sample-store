@@ -8,8 +8,8 @@ export const siteConfig = {
   ogImage: 'https://saveklick.com/og-image.png',
   description:
     'Save more with SaveKlick. Find verified coupons, exclusive promo codes, and cashback offers from top stores. Shop smart and get rewarded.',
-  icon: '/saveklick-icon.svg',
-  favicon: '/saveklick-favicon.svg',
+  icon: '/banners/SaveKlick.png',
+  favicon: '/banners/SaveKlick.png',
   emails: {
     contact: 'contact@saveklick.com',
     support: 'support@saveklick.com',

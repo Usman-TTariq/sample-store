@@ -13,14 +13,23 @@ export interface CartItem {
   addedAt: number; // timestamp
 }
 
-const CART_KEY = 'coupachu_cart';
+const CART_KEY = 'saveklick_cart';
+const LEGACY_CART_KEY = 'coupachu_cart';
 
 // Get all cart items
 export function getCartItems(): CartItem[] {
   if (typeof window === 'undefined') return [];
 
   try {
-    const stored = localStorage.getItem(CART_KEY);
+    let stored = localStorage.getItem(CART_KEY);
+    if (!stored) {
+      const legacy = localStorage.getItem(LEGACY_CART_KEY);
+      if (legacy) {
+        localStorage.setItem(CART_KEY, legacy);
+        localStorage.removeItem(LEGACY_CART_KEY);
+        stored = legacy;
+      }
+    }
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
     console.error('Error getting cart items:', error);

@@ -53,7 +53,7 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/coupons" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
+                  <Link href="/promotions" className="text-gray-300 hover:text-[#FFD23F] transition text-sm">
                     Browse Deals
                   </Link>
                 </li>
@@ -135,7 +135,7 @@ export default function Footer() {
             </p>
 
             {/* Payment Method Icons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 max-sm:flex-wrap max-sm:justify-center">
               <div className="px-3 py-1.5 bg-white rounded flex items-center justify-center">
                 <span className="text-xs font-bold text-blue-600">VISA</span>
               </div>

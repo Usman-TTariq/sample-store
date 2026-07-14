@@ -1,20 +1,21 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { getCategoryById, Category } from '@/lib/services/categoryService';
+import Link from 'next/link';
+import { getCategoryBySlugOrId, Category } from '@/lib/services/categoryService';
 import { getStoresByCategoryId, Store } from '@/lib/services/storeService';
 import { getCouponsByCategoryId, Coupon } from '@/lib/services/couponService';
 import { addNotification } from '@/lib/services/notificationsService';
 import Navbar from '@/app/components/Navbar';
-import Footer from '@/app/components/Footer';
-import Newsletter from '@/app/components/Newsletter';
 import CouponPopup from '@/app/components/CouponPopup';
+import GetCodeButton from '@/app/components/GetCodeButton';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
 import { Tag, CheckCircle, Calendar, ExternalLink, ArrowRight, Info } from 'lucide-react';
-import Link from 'next/link';
+import { getCouponDisplayTitle } from '@/lib/utils/couponDisplay';
+import { getCategoryCoverUrl, getCategoryEmoji, isCategoryImageUrl } from '@/lib/utils/categoryIcon';
 
 export default function CategoryPageClient({ params }: { params: { id: string } }) {
-  const categoryId = params.id;
+  const idOrSlug = params.id;
 
   const [category, setCategory] = useState<Category | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
@@ -28,10 +29,17 @@ export default function CategoryPageClient({ params }: { params: { id: string } 
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [categoryData, storesData, couponsData] = await Promise.all([
-          getCategoryById(categoryId),
-          getStoresByCategoryId(categoryId),
-          getCouponsByCategoryId(categoryId),
+        const categoryData = await getCategoryBySlugOrId(idOrSlug);
+        if (!categoryData?.id) {
+          setCategory(null);
+          setStores([]);
+          setCoupons([]);
+          return;
+        }
+
+        const [storesData, couponsData] = await Promise.all([
+          getStoresByCategoryId(categoryData.id),
+          getCouponsByCategoryId(categoryData.id),
         ]);
 
         setCategory(categoryData);
@@ -44,10 +52,10 @@ export default function CategoryPageClient({ params }: { params: { id: string } 
       }
     };
 
-    if (categoryId) {
+    if (idOrSlug) {
       fetchData();
     }
-  }, [categoryId]);
+  }, [idOrSlug]);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return null;
@@ -181,35 +189,33 @@ export default function CategoryPageClient({ params }: { params: { id: string } 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-cream">
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-xl font-semibold text-gray-600">Loading...</div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   if (!category) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-cream">
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Category Not Found</h1>
-            <Link href="/categories" className="text-[#B8860B] hover:underline">
+            <Link href="/categories" className="text-[#C7395F] hover:underline">
               Back to Categories
             </Link>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-cream">
       <Navbar />
 
       {/* Breadcrumbs */}
@@ -221,39 +227,35 @@ export default function CategoryPageClient({ params }: { params: { id: string } 
       />
 
       {/* Category Header */}
-      <div className="w-full bg-[#FFFBF0] py-8 sm:py-12 md:py-16 border-b border-[#FFD23F]/40">
+      <div className="w-full bg-gradient-to-br from-brand-cyan/10 via-white to-brand-cyan/15 py-8 sm:py-12 md:py-16 border-b border-brand-cyan/20">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
           <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
-            <div
-              className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-md flex-shrink-0"
-              style={{ backgroundColor: category.backgroundColor }}
-            >
-              {category.logoUrl ? (
-                <img
-                  src={category.logoUrl}
-                  alt={category.name}
-                  className={`${category.logoUrl.includes('data:image/svg+xml') ? 'w-full h-full' : 'w-8 h-8 sm:w-12 sm:h-12 md:w-14 md:h-14'} object-contain`}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full rounded-full flex items-center justify-center" style={{ backgroundColor: category.backgroundColor }}>
-                  <div className="w-3/4 h-3/4 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-700">
-                      {category.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-              )}
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden shadow-md flex-shrink-0 border border-tan">
+              <img
+                src={getCategoryCoverUrl(category.name)}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-brand-navy/35" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                {isCategoryImageUrl(category.logoUrl) ? (
+                  <img
+                    src={category.logoUrl!}
+                    alt={category.name}
+                    className="w-8 h-8 sm:w-10 sm:h-10 object-contain drop-shadow"
+                  />
+                ) : (
+                  <span className="text-2xl sm:text-3xl drop-shadow">{getCategoryEmoji(category.name)}</span>
+                )}
+              </div>
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 capitalize truncate">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-brand-navy capitalize truncate">
                 {category.name}
               </h1>
-              <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-0.5 sm:mt-1">
-                {stores.length} {stores.length === 1 ? 'Store' : 'Stores'} ΓÇó {coupons.length} {coupons.length === 1 ? 'Coupon' : 'Coupons'}
+              <p className="text-xs sm:text-sm md:text-base text-brand-muted mt-0.5 sm:mt-1">
+                {stores.length} {stores.length === 1 ? 'Store' : 'Stores'} · {coupons.length}{' '}
+                {coupons.length === 1 ? 'Coupon' : 'Coupons'}
               </p>
             </div>
           </div>
@@ -290,11 +292,11 @@ export default function CategoryPageClient({ params }: { params: { id: string } 
                         </span>
                       </div>
                     )}
-                    <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 group-hover:text-[#E6BC2E] transition-colors line-clamp-2">
+                    <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 group-hover:text-[#C7395F] transition-colors line-clamp-2">
                       {store.name}
                     </h3>
                     {store.voucherText && (
-                      <p className="text-xs sm:text-sm text-[#B8860B] font-medium line-clamp-1">{store.voucherText}</p>
+                      <p className="text-xs sm:text-sm text-brand-navy font-medium line-clamp-1">{store.voucherText}</p>
                     )}
                     {store.description && (
                       <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2 line-clamp-2 hidden sm:block">{store.description}</p>
@@ -334,11 +336,11 @@ export default function CategoryPageClient({ params }: { params: { id: string } 
                         />
                       )}
                       <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 text-center line-clamp-2">
-                        {coupon.storeName || coupon.code}
+                        {getCouponDisplayTitle(coupon)}
                       </h3>
-                      {coupon.description && (
-                        <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 md:mb-4 text-center line-clamp-2 hidden sm:block">
-                          {coupon.description}
+                      {coupon.storeName && (
+                        <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3 text-center line-clamp-1">
+                          {coupon.storeName}
                         </p>
                       )}
                       {isExpired && (
@@ -347,24 +349,18 @@ export default function CategoryPageClient({ params }: { params: { id: string } 
                         </div>
                       )}
                       {!isExpired && (
-                        <button
+                        <GetCodeButton
+                          label={
+                            isRevealed
+                              ? coupon.url
+                                ? 'Visit Store'
+                                : coupon.code || getCodePreview(coupon)
+                              : getCodePreview(coupon)
+                          }
+                          code={coupon.code}
+                          isDeal={coupon.couponType === 'deal'}
                           onClick={(e) => handleGetDeal(coupon, e)}
-                          className="w-full bg-gradient-to-r from-[#FFD23F] to-[#FFE566] border-2 border-dashed border-black/20 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-black font-semibold hover:from-black hover:to-black hover:text-white hover:border-black/30 transition-all duration-300 group relative overflow-hidden shadow-md hover:shadow-lg text-xs sm:text-sm md:text-base"
-                          style={{ borderStyle: 'dashed', borderWidth: '2px' }}
-                        >
-                          <span className="flex-1 flex items-center justify-center">
-                            {isRevealed ? (
-                              coupon.url ? 'Visit Store' : (coupon.code || getCodePreview(coupon))
-                            ) : (
-                              <span className="drop-shadow-sm">{getCodePreview(coupon)}</span>
-                            )}
-                          </span>
-                          {getLastTwoDigits(coupon) && !isRevealed && (
-                            <div className="w-0 opacity-0 group-hover:w-20 group-hover:opacity-100 transition-all duration-300 ease-out flex items-center justify-center border-l-2 border-dashed border-black/30 ml-2 pl-2 whitespace-nowrap overflow-hidden bg-gradient-to-r from-transparent to-[#FFD23F]/20" style={{ borderStyle: 'dashed' }}>
-                              <span className="text-black font-bold text-xs">...{getLastTwoDigits(coupon)}</span>
-                            </div>
-                          )}
-                        </button>
+                        />
                       )}
                       {isRevealed && coupon.code && (
                         <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-gray-100 rounded-lg">
@@ -391,18 +387,14 @@ export default function CategoryPageClient({ params }: { params: { id: string } 
         {stores.length === 0 && coupons.length === 0 && (
           <div className="text-center py-6 sm:py-8 md:py-12">
             <p className="text-gray-600 text-sm sm:text-base md:text-lg">No stores or coupons found for this category.</p>
-            <Link href="/categories" className="text-[#B8860B] hover:underline mt-2 sm:mt-4 inline-block text-sm sm:text-base">
+            <Link href="/categories" className="text-[#C7395F] hover:underline mt-2 sm:mt-4 inline-block text-sm sm:text-base">
               Browse All Categories
             </Link>
           </div>
         )}
       </div>
 
-      {/* Newsletter Subscription */}
-      <Newsletter />
-
       {/* Footer */}
-      <Footer />
 
       {/* Coupon Popup */}
       <CouponPopup

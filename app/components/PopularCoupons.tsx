@@ -7,6 +7,7 @@ import { addNotification } from '@/lib/services/notificationsService';
 import Link from 'next/link';
 import CouponPopup from './CouponPopup';
 import StoreLogo from './StoreLogo';
+import GetCodeButton from './GetCodeButton';
 
 export default function PopularCoupons() {
   const [coupons, setCoupons] = useState<(Coupon | null)[]>(Array(8).fill(null));
@@ -271,16 +272,16 @@ export default function PopularCoupons() {
                   <p className="text-[10px] text-gray-500 line-clamp-2 mb-3 min-h-[2rem]">
                     {coupon.description || coupon.discount || `${coupon.storeName || 'Store'} exclusive deal`}
                   </p>
-                  <button
+                  <GetCodeButton
+                    label={
+                      coupon.id && revealedCoupons.has(coupon.id) && coupon.couponType === 'code' && coupon.code
+                        ? 'Copied!'
+                        : getCodePreview(coupon)
+                    }
+                    code={coupon.code}
+                    isDeal={(coupon.couponType || 'deal') === 'deal'}
                     onClick={(e) => handleGetDeal(coupon, e)}
-                    className="w-full py-2 rounded-full bg-[#FFD23F] text-black text-[10px] font-bold hover:bg-black hover:text-white transition-colors shadow-sm"
-                  >
-                    {coupon.id && revealedCoupons.has(coupon.id) && coupon.couponType === 'code' && coupon.code
-                      ? coupon.code
-                      : (coupon.couponType || 'deal') === 'code'
-                        ? 'Coupon code'
-                        : 'Get Deal'}
-                  </button>
+                  />
                 </div>
               ) : (
                 <div

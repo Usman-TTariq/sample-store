@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getCategories, Category } from "@/lib/services/categoryService";
-import { getTrendingStores, getStores, Store } from "@/lib/services/storeService";
+import { getStores, Store } from "@/lib/services/storeService";
 import { getFavoritesCount } from "@/lib/services/favoritesService";
 import { getUnreadCount, initializeSampleNotifications } from "@/lib/services/notificationsService";
+import { categoryPath } from "@/lib/utils/categorySlug";
 import { siteConfig } from "@/lib/seo/config";
 import SiteLogoText from "@/app/components/SiteLogoText";
 import SearchSuggestionsDropdown from "@/app/components/SearchSuggestionsDropdown";
@@ -14,8 +15,7 @@ import { useSearchSuggestions } from "@/lib/hooks/useSearchSuggestions";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   Search, Menu, X, ChevronDown, User,
-  Phone, Heart, ShoppingBag, Moon,
-  MapPin, ChevronLeft, ChevronRight, Facebook, Twitter, Instagram, Youtube
+  Heart, Moon, Phone
 } from "lucide-react";
 
 // Helper function to get favicon URL from store data
@@ -82,7 +82,6 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [notificationsCount, setNotificationsCount] = useState(0);
-  const [promoIndex, setPromoIndex] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -130,12 +129,6 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
     };
   }, [variant]);
 
-  const promotions = [
-    "Get 35% Off Code FG6556KD",
-    "Free Shipping on Orders Over $50",
-    "New Arrivals - Check Them Out!"
-  ];
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -157,14 +150,9 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
     window.addEventListener('notificationUpdated', handleUpdate);
     window.addEventListener('favoritesUpdated', handleUpdate);
 
-    const interval = setInterval(() => {
-      setPromoIndex((prev) => (prev + 1) % promotions.length);
-    }, 5000);
-
     return () => {
       window.removeEventListener('notificationUpdated', handleUpdate);
       window.removeEventListener('favoritesUpdated', handleUpdate);
-      clearInterval(interval);
     };
   }, []);
 
@@ -224,7 +212,7 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
     <div className="grid grid-cols-4 gap-4 p-5 w-[650px] bg-white rounded-b-xl shadow-xl border border-gray-200 mt-2">
       <div className="col-span-3 grid grid-cols-2 gap-x-6 gap-y-2">
         {categories.slice(0, 10).map((cat) => (
-          <Link key={cat.id} href={`/categories/${cat.id}`} className="flex items-center gap-2 group/item p-1.5 hover:bg-gray-50 rounded-lg transition-colors">
+          <Link key={cat.id} href={categoryPath(cat)} className="flex items-center gap-2 group/item p-1.5 hover:bg-gray-50 rounded-lg transition-colors">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] text-white font-bold" style={{ backgroundColor: cat.backgroundColor || '#ccc' }}>
               {cat.logoUrl ? <img src={cat.logoUrl} className="w-4 h-4 object-contain" /> : cat.name.charAt(0)}
             </div>
@@ -302,7 +290,7 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
     { name: "Promotions", path: "/promotions", component: null },
     {
       name: "Pages",
-      path: "/pages",
+      path: "/about-us",
       component: <SimpleMenu items={[
         { label: "About Us", href: "/about-us" },
         { label: "Contact Us", href: "/contact-us" },
@@ -315,38 +303,7 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
     <>
       <div ref={mobileNavRef} className="relative z-[120]">
       <div ref={mainHeaderRef} id="navbar-main-header">
-      {/* 1. TOP BAR — desktop/tablet only */}
-      <div className="hidden md:block bg-gradient-to-br from-[#111111] to-black text-white text-[11px] py-2 border-b border-gray-700/50 font-sans">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-full">
-          <div className="hidden md:flex items-center gap-5 opacity-90">
-            <Link href="/stores" className="flex items-center gap-1.5 hover:text-[#FFD23F] transition-colors">
-              <MapPin className="w-3.5 h-3.5" /> <span className="font-semibold tracking-wide">Find a Store</span>
-            </Link>
-            <div className="flex items-center gap-1.5 cursor-pointer hover:text-[#FFD23F] transition-colors group relative">
-              <span className="font-semibold tracking-wide">USD ($)</span> <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform" />
-            </div>
-          </div>
-
-          <div className="flex-1 flex justify-center items-center gap-3">
-            <button onClick={() => setPromoIndex((prev) => (prev - 1 + promotions.length) % promotions.length)} className="hover:text-[#FFD23F] transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-            <AnimatePresence mode="wait">
-              <motion.span key={promoIndex} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="font-semibold tracking-wider text-center min-w-[200px]">
-                {promotions[promoIndex]}
-              </motion.span>
-            </AnimatePresence>
-            <button onClick={() => setPromoIndex((prev) => (prev + 1) % promotions.length)} className="hover:text-[#FFD23F] transition-colors"><ChevronRight className="w-4 h-4" /></button>
-          </div>
-
-          <div className="hidden md:flex items-center gap-3 opacity-90">
-            <a href="#" className="hover:text-[#FFD23F] transition-colors"><Facebook className="w-3.5 h-3.5" /></a>
-            <a href="#" className="hover:text-[#FFD23F] transition-colors"><Twitter className="w-3.5 h-3.5" /></a>
-            <a href="#" className="hover:text-[#FFD23F] transition-colors"><Instagram className="w-3.5 h-3.5" /></a>
-            <a href="#" className="hover:text-[#FFD23F] transition-colors"><Youtube className="w-3.5 h-3.5" /></a>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. MIDDLE BAR */}
+      {/* Main header bar */}
       <div className="bg-gradient-to-br from-[#111111] to-black py-2.5 sm:py-2 border-b border-gray-700/50 font-sans text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4 lg:gap-8">
@@ -405,11 +362,11 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
                   <Heart className="w-5 h-5" />
                   {favoritesCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#FFD23F] rounded-full"></span>}
                 </Link>
-                <Link href="/profile" className="hover:text-[#FFD23F] transition-colors text-white"><User className="w-5 h-5" /></Link>
+                <Link href="/notifications" className="hover:text-[#FFD23F] transition-colors text-white"><User className="w-5 h-5" /></Link>
                 <button
                   type="button"
                   aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-                  className="lg:hidden p-1.5 ml-1 text-white rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD23F]"
+                  className="lg:hidden p-1.5 ml-1 text-white rounded-md border border-[#FFD23F]/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD23F]"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
                   {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -476,7 +433,7 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
             </div>
             <div className="flex items-center gap-6">
               <Link
-                href="/submit-coupon"
+                href="/contact-us"
                 className={`text-[13px] font-bold transition-colors uppercase tracking-wide ${
                   isBottomBarPinned ? 'text-gray-300 hover:text-[#FFD23F]' : 'text-[#111111] hover:text-[#B8860B]'
                 }`}
@@ -484,7 +441,7 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
                 Submit Coupon
               </Link>
               <Link
-                href="/support"
+                href="/faqs"
                 className={`text-[13px] font-bold transition-colors uppercase tracking-wide ${
                   isBottomBarPinned ? 'text-gray-300 hover:text-[#FFD23F]' : 'text-[#111111] hover:text-[#B8860B]'
                 }`}
@@ -552,8 +509,8 @@ export default function Navbar({ variant = 'full' }: NavbarProps) {
                 <Link key={link.name} href={link.path} onClick={() => setMobileMenuOpen(false)} className="block py-3 border-b border-gray-700/50 font-medium text-base text-gray-200 hover:text-[#FFD23F]">{link.name}</Link>
               ))}
               <div className="pt-4 flex flex-col gap-1">
-                <Link href="/submit-coupon" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-sm text-gray-400 hover:text-[#FFD23F]">Submit Coupon</Link>
-                <Link href="/support" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-sm text-gray-400 hover:text-[#FFD23F]">Support & FAQs</Link>
+                <Link href="/contact-us" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-sm text-gray-400 hover:text-[#FFD23F]">Submit Coupon</Link>
+                <Link href="/faqs" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-sm text-gray-400 hover:text-[#FFD23F]">Support & FAQs</Link>
               </div>
             </div>
             </motion.div>

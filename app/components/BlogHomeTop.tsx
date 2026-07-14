@@ -127,10 +127,9 @@ export default function BlogHomeTop() {
 
   return (
     <>
+      {/* Logo + search — then HomeBlogNav breadcrumb with Home options */}
       <div className="bg-black">
-        <header id="home-top-header" className="text-white font-sans">
-          {/* Row 1: centered logo + search right */}
-          <div className="border-b border-gray-800/80">
+        <header id="home-top-header" className="text-white font-sans border-b border-gray-800/80">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
             <div className="flex flex-col items-center gap-4 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center">
               <div className="hidden lg:block" aria-hidden />
@@ -184,7 +183,6 @@ export default function BlogHomeTop() {
               </div>
             </div>
           </div>
-        </div>
         </header>
 
         <HomeBlogNav

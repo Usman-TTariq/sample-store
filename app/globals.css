@@ -1,22 +1,68 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* SaveKlick palette — black / gold */
+  --cream: #FFFBF0;
+  --charcoal: #111111;
+  --tan: #e8e0d0;
+  --red: #111111;
+  --red-hover: #000000;
+  --brown: #B8860B;
+  --orange: #FFD23F;
+  --dark-brown: #000000;
+  --muted: #6b7280;
+
+  --background: #FFFBF0;
+  --foreground: #111111;
+  --surface: #ffffff;
+  --surface-muted: #f5f0e6;
+  --surface-alt: #f5f0e6;
+
+  /* Legacy aliases — page layouts use these class names */
+  --brand-navy: #111111;
+  --brand-navy-dark: #000000;
+  --brand-navy-darker: #000000;
+  --brand-navy-light: #333333;
+  --brand-cyan: #FFD23F;
+  --brand-cyan-soft: rgba(255, 210, 63, 0.35);
+  --brand-accent-text: #B8860B;
+  --brand-yellow: #FFD23F;
+  --brand-yellow-hover: #E6BC2E;
+  --brand-muted: #6b7280;
+  --brand-red: #B8860B;
+
+  --border-subtle: #e8e0d0;
+  --shadow-sm: 0 1px 2px rgba(17, 17, 17, 0.08);
+  --shadow-md: 0 4px 16px rgba(17, 17, 17, 0.1);
+  --shadow-lg: 0 12px 32px rgba(17, 17, 17, 0.14);
+  --radius-card: 0.75rem;
+  --radius-button: 0.5rem;
+  --home-max-width: 1280px;
+  --section-py: 3rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: #FFFBF0;
+  --color-foreground: #111111;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f5f0e6;
+  --color-cream: #FFFBF0;
+  --color-charcoal: #111111;
+  --color-tan: #e8e0d0;
+  --color-brand-navy: #111111;
+  --color-brand-navy-dark: #000000;
+  --color-brand-navy-darker: #000000;
+  --color-brand-navy-light: #333333;
+  --color-brand-cyan: #FFD23F;
+  --color-brand-orange: #FFD23F;
+  --color-brand-accent: #B8860B;
+  --color-brand-yellow: #FFD23F;
+  --color-brand-red: #B8860B;
+  --color-brand-yellow-hover: #E6BC2E;
+  --color-brand-brown: #B8860B;
+  --color-brand-muted: #6b7280;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 html {
@@ -28,12 +74,22 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background: #FFFFFF;
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--cream);
+  color: var(--charcoal);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   width: 100%;
   position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.home-container {
+  max-width: var(--home-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 /* Input and Textarea Styling for Better Readability */
@@ -47,19 +103,18 @@ input[type="tel"],
 input[type="date"],
 textarea,
 select {
-  color: #111827 !important; /* gray-900 */
+  color: #111827 !important;
   font-weight: 500;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
   font-weight: 400;
 }
 
-/* Ensure labels are dark and readable */
 label {
-  color: #111827 !important; /* gray-900 */
+  color: #111827 !important;
 }
 
 @keyframes slideLeft {
@@ -89,16 +144,15 @@ label {
   }
 }
 
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 
-  /* Mobile Animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -152,56 +206,147 @@ label {
   }
 }
 
-/* Hide scrollbar for horizontal scrolling (all breakpoints) */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Mobile animation classes - only apply on mobile */
 @media (max-width: 767px) {
   .animate-fade-in-up {
     animation: fadeInUp 0.6s ease-out forwards;
   }
-  
+
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
   }
-  
+
   .animate-scale-in {
     animation: scaleIn 0.5s ease-out forwards;
   }
-  
+
   .animate-slide-in-left {
     animation: slideInLeft 0.6s ease-out forwards;
   }
-  
+
   .animate-slide-in-right {
     animation: slideInRight 0.6s ease-out forwards;
   }
-  
-  /* Staggered animations for grid items */
+
   .animate-delay-1 {
     animation-delay: 0.1s;
     opacity: 0;
   }
-  
+
   .animate-delay-2 {
     animation-delay: 0.2s;
     opacity: 0;
   }
-  
+
   .animate-delay-3 {
     animation-delay: 0.3s;
     opacity: 0;
   }
-  
+
   .animate-delay-4 {
     animation-delay: 0.4s;
     opacity: 0;
   }
+}
+
+/* Deal CTA — solid button, no peel */
+.coupon-deal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 2.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-dark) 100%);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.coupon-deal-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+  box-shadow: var(--shadow-sm);
+}
+
+.coupon-deal-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Code CTA — peel reveal on hover */
+.coupon-peel-btn {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 2.75rem;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: #fff;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.coupon-peel-btn:hover:not(:disabled) {
+  border-color: var(--tan);
+  border-style: dashed;
+  box-shadow: var(--shadow-sm);
+}
+
+.coupon-peel-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.coupon-peel-code {
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 42%;
+  padding-right: 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--brand-navy);
+  opacity: 0;
+  transform: translateX(6px);
+  user-select: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.coupon-peel-btn:hover:not(:disabled) .coupon-peel-code {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.coupon-peel-label {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-dark) 100%);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  transition: width 0.25s ease, clip-path 0.25s ease, filter 0.2s ease;
+}
+
+.coupon-peel-btn:hover:not(:disabled) .coupon-peel-label {
+  width: 78%;
+  clip-path: polygon(0 0, 100% 0, 86% 100%, 0 100%);
+  filter: brightness(1.03);
 }

@@ -1,661 +1,819 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense, useMemo, useRef } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  ArrowRight,
+  BadgeCheck,
+  Loader2,
+  Search,
+  Sparkles,
+  Tag,
+  X,
+} from 'lucide-react';
 import { getActiveCoupons, Coupon } from '@/lib/services/couponService';
 import { getCategories, Category } from '@/lib/services/categoryService';
 import { getStores, Store } from '@/lib/services/storeService';
-import { addNotification } from '@/lib/services/notificationsService';
+import { getCouponDisplayTitle } from '@/lib/utils/couponDisplay';
+import { getCategoryEmoji } from '@/lib/utils/categoryIcon';
+import { categoryPath } from '@/lib/utils/categorySlug';
 import Navbar from '@/app/components/Navbar';
-import Footer from '@/app/components/Footer';
-import Newsletter from '@/app/components/Newsletter';
-import CouponPopup from '@/app/components/CouponPopup';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
-import Link from 'next/link';
+import CouponPopup from '@/app/components/CouponPopup';
+import GetCodeButton from '@/app/components/GetCodeButton';
 
-// Helper function to extract domain from URL
+type SuggestResults = {
+  stores: Store[];
+  categories: Category[];
+  coupons: Coupon[];
+};
+
+const STORES_PER_PAGE = 24;
+
 const extractDomain = (url: string): string | null => {
   if (!url) return null;
   try {
-    const urlObj = new URL(url);
-    return urlObj.hostname.replace('www.', '');
+    return new URL(url).hostname.replace('www.', '');
   } catch {
     return null;
   }
 };
 
-// Get favicon URL with fallback to tracking link (matching homepage implementation)
 const getFaviconUrl = (store: Store): string | null => {
-  // Try website URL first
+  if (store.logoUrl) return store.logoUrl;
   if (store.websiteUrl) {
     const domain = extractDomain(store.websiteUrl);
     if (domain) return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
   }
-
-  // Fallback to tracking link
   if (store.trackingLink) {
     const domain = extractDomain(store.trackingLink);
     if (domain) return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
   }
-
-  // Last resort: Try to construct domain from store name
   if (store.name) {
     const nameLower = store.name.toLowerCase().replace(/\s+/g, '');
     const domain = nameLower.includes('.') ? nameLower : `${nameLower}.com`;
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
   }
-
   return null;
 };
 
-function CouponsContent() {
-  const searchParams = useSearchParams();
-  const categoryParam = searchParams.get('category');
-  const storeParam = searchParams.get('store');
+function storeHref(store: Store) {
+  return store.slug ? `/stores/${store.slug}` : store.id ? `/stores/${store.id}` : '/stores';
+}
 
+function CouponPromoCard({
+  coupon,
+  onGetCode,
+}: {
+  coupon: Coupon;
+  onGetCode: (coupon: Coupon) => void;
+}) {
+  const title = getCouponDisplayTitle(coupon);
+  const storeLabel = coupon.storeName || 'Store';
+  const usedToday = ((coupon.id?.charCodeAt(0) || 20) % 80) + 12;
+  const isCode = coupon.couponType !== 'deal';
+
+  return (
+    <article className="flex flex-col bg-white border border-tan/80 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-11 h-11 rounded-md border border-tan bg-cream/50 flex items-center justify-center overflow-hidden shrink-0">
+          {coupon.logoUrl ? (
+            <img src={coupon.logoUrl} alt="" className="max-h-8 max-w-8 object-contain" />
+          ) : (
+            <span className="text-sm font-bold text-brand-navy">{storeLabel.charAt(0)}</span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold text-brand-navy uppercase tracking-wide truncate">{storeLabel}</p>
+          <p className="text-sm font-semibold text-brand-navy/90 line-clamp-2 mt-0.5">{title}</p>
+        </div>
+      </div>
+      <p className="text-[11px] text-brand-muted uppercase tracking-wide mb-3">
+        Used {usedToday} times today
+      </p>
+      <GetCodeButton
+        className="mt-auto"
+        label={isCode ? 'Get Code' : 'Get Deal'}
+        code={coupon.code}
+        isDeal={!isCode}
+        onClick={() => onGetCode(coupon)}
+      />
+    </article>
+  );
+}
+
+function CouponsContent() {
+  const router = useRouter();
+  const searchWrapRef = useRef<HTMLDivElement>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [supabaseCoupons, setSupabaseCoupons] = useState<Coupon[]>([]);
-  const [filteredCoupons, setFilteredCoupons] = useState<Coupon[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || '');
-  const [selectedStore, setSelectedStore] = useState<string>(storeParam || '');
-  const [revealedCoupons, setRevealedCoupons] = useState<Set<string>>(new Set());
-  const [showPopup, setShowPopup] = useState(false);
+  const [heroQuery, setHeroQuery] = useState('');
+  const [directoryQuery, setDirectoryQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestResults, setSuggestResults] = useState<SuggestResults>({
+    stores: [],
+    categories: [],
+    coupons: [],
+  });
+  const [storePage, setStorePage] = useState(1);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
-  const [supabaseStores, setSupabaseStores] = useState<Store[]>([]);
-  // console.log("coupons: ", coupons);
+  const [showPopup, setShowPopup] = useState(false);
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [couponsData, categoriesData, storesData, supabaseResponse] = await Promise.all([
+        const [couponsData, categoriesData, storesData] = await Promise.all([
           getActiveCoupons(),
           getCategories(),
           getStores(),
-          fetch('/api/coupons/supabase')
-            .then((res) => res.json())
-            .catch((err) => {
-              console.error('Error fetching Supabase coupons:', err);
-              return { success: false, coupons: [] };
-            }),
         ]);
-
-        const supabaseList: Coupon[] = Array.isArray(supabaseResponse?.coupons)
-          ? (supabaseResponse.coupons as Coupon[])
-          : [];
-
-        setSupabaseCoupons(supabaseList);
-        setCoupons([...couponsData, ...supabaseList]);
+        setCoupons(couponsData);
         setCategories(categoriesData);
         setStores(storesData);
       } catch (error) {
-        console.error('Error fetching coupons data:', error);
+        console.error('Error fetching promotions data:', error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
-  useEffect(() => {
-    let filtered = [...coupons];
-
-    // Filter by category
-    if (selectedCategory) {
-      filtered = filtered.filter(coupon => coupon.categoryId === selectedCategory);
-    }
-
-    // Filter by store
-    if (selectedStore) {
-      filtered = filtered.filter(coupon => {
-        // Check if coupon is associated with selected store via storeIds
-        if (coupon.storeIds && coupon.storeIds.includes(selectedStore)) {
-          return true;
+  const storeDealCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const coupon of coupons) {
+      if (coupon.storeIds?.length) {
+        for (const id of coupon.storeIds) {
+          counts.set(id, (counts.get(id) || 0) + 1);
         }
-        // Also check by storeName for backward compatibility
-        const store = stores.find(s => s.id === selectedStore);
-        if (store && coupon.storeName === store.name) {
-          return true;
-        }
-        return false;
-      });
-    }
-
-    setFilteredCoupons(filtered);
-  }, [selectedCategory, selectedStore, coupons, stores]);
-
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return null;
-    try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-    } catch {
-      return null;
-    }
-  };
-
-  // Get last 2 digits of code for code type coupons
-  const getCodePreview = (coupon: Coupon): string => {
-    if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-      return coupon.getCodeText || 'Get Code';
-    }
-    return coupon.getDealText || 'Get Deal';
-  };
-
-  // Get last 2 digits for hover display
-  const getLastTwoDigits = (coupon: Coupon): string | null => {
-    if ((coupon.couponType || 'deal') === 'code' && coupon.code) {
-      const code = coupon.code.trim();
-      if (code.length >= 2) {
-        return code.slice(-2);
+      }
+      if (coupon.storeName) {
+        const match = stores.find((s) => s.name === coupon.storeName);
+        if (match?.id) counts.set(match.id, (counts.get(match.id) || 0) + 1);
       }
     }
-    return null;
-  };
+    return counts;
+  }, [coupons, stores]);
 
-  const handleGetDeal = (coupon: Coupon, e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  const popularCoupons = useMemo(() => {
+    const popular = coupons.filter((c) => c.isPopular);
+    const list = popular.length >= 6 ? popular : coupons;
+    return list.slice(0, 6);
+  }, [coupons]);
+
+  const topStores = useMemo(() => {
+    return [...stores]
+      .sort((a, b) => {
+        if (a.isTrending && !b.isTrending) return -1;
+        if (!a.isTrending && b.isTrending) return 1;
+        return (storeDealCounts.get(b.id || '') || 0) - (storeDealCounts.get(a.id || '') || 0);
+      })
+      .slice(0, 12);
+  }, [stores, storeDealCounts]);
+
+  const trendingCategories = useMemo(() => {
+    return categories
+      .map((category) => ({
+        ...category,
+        count: stores.filter((s) => s.categoryId === category.id).length,
+      }))
+      .filter((c) => c.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [categories, stores]);
+
+  const directoryStores = useMemo(() => {
+    let list = [...stores];
+    if (directoryQuery.trim()) {
+      const q = directoryQuery.trim().toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          (s.description || '').toLowerCase().includes(q)
+      );
+    }
+    return list.sort((a, b) => {
+      if (a.isTrending && !b.isTrending) return -1;
+      if (!a.isTrending && b.isTrending) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }, [stores, directoryQuery]);
+
+  const visibleStores = directoryStores.slice(0, storePage * STORES_PER_PAGE);
+  const hasMore = visibleStores.length < directoryStores.length;
+
+  const hasSuggestResults =
+    suggestResults.stores.length > 0 ||
+    suggestResults.categories.length > 0 ||
+    suggestResults.coupons.length > 0;
+
+  useEffect(() => {
+    const term = heroQuery.trim();
+    if (term.length < 1) {
+      setShowSuggestions(false);
+      setSuggestResults({ stores: [], categories: [], coupons: [] });
+      setSuggestLoading(false);
+      return;
     }
 
-    // Copy code to clipboard FIRST (before showing popup) - only for code type
+    setSuggestLoading(true);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(term)}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (data.success && data.results) {
+          setSuggestResults({
+            stores: data.results.stores || [],
+            categories: data.results.categories || [],
+            coupons: data.results.coupons || [],
+          });
+          setShowSuggestions(true);
+        }
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Search suggest error:', error);
+        }
+      } finally {
+        if (!controller.signal.aborted) setSuggestLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [heroQuery]);
+
+  useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      if (!searchWrapRef.current?.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, []);
+
+  const handleGetCode = (coupon: Coupon) => {
     if (coupon.couponType === 'code' && coupon.code) {
-      const codeToCopy = coupon.code.trim();
-      copyToClipboard(codeToCopy);
+      navigator.clipboard?.writeText(coupon.code.trim()).catch(() => {});
     }
-
-    // Mark coupon as revealed
-    if (coupon.id) {
-      setRevealedCoupons(prev => new Set(prev).add(coupon.id!));
-    }
-
-    // Show popup
     setSelectedCoupon(coupon);
     setShowPopup(true);
-
-    // Automatically open URL in new tab after a short delay (to ensure popup is visible first)
-    if (coupon.url && coupon.url.trim()) {
-      setTimeout(() => {
-        window.open(coupon.url, '_blank', 'noopener,noreferrer');
-      }, 500);
+    if (coupon.url?.trim()) {
+      setTimeout(() => window.open(coupon.url, '_blank', 'noopener,noreferrer'), 500);
     }
   };
 
-  const handlePopupContinue = () => {
-    if (selectedCoupon?.url) {
-      window.open(selectedCoupon.url, '_blank', 'noopener,noreferrer');
-    }
-    setShowPopup(false);
-    setSelectedCoupon(null);
-  };
-
-  const handlePopupClose = () => {
-    setShowPopup(false);
-    setSelectedCoupon(null);
-  };
-
-  const copyToClipboard = (text: string) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(() => {
-        addNotification({
-          title: 'Code Copied!',
-          message: `Coupon code "${text}" has been copied to clipboard.`,
-          type: 'success'
-        });
-      }).catch((err) => {
-        console.error('Clipboard API failed:', err);
-        copyToClipboardFallback(text);
-      });
+  const handleHeroSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = heroQuery.trim();
+    setShowSuggestions(false);
+    if (q) {
+      setDirectoryQuery(q);
+      router.push(`/search?q=${encodeURIComponent(q)}`);
     } else {
-      copyToClipboardFallback(text);
+      document.getElementById('all-deals')?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  const copyToClipboardFallback = (text: string) => {
-    try {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '0';
-      textArea.style.top = '0';
-      textArea.style.width = '2px';
-      textArea.style.height = '2px';
-      textArea.style.opacity = '0';
-      textArea.style.pointerEvents = 'none';
-      textArea.style.zIndex = '-1';
-
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      textArea.setSelectionRange(0, 99999);
-
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textArea);
-
-      if (successful) {
-        addNotification({
-          title: 'Code Copied!',
-          message: `Coupon code "${text}" has been copied to clipboard.`,
-          type: 'success'
-        });
-      } else {
-        addNotification({
-          title: 'Copy Manually',
-          message: `Code: ${text} (Please copy manually)`,
-          type: 'info'
-        });
-      }
-    } catch (err) {
-      console.error('Fallback copy failed:', err);
-      addNotification({
-        title: 'Copy Manually',
-        message: `Code: ${text} (Please copy manually)`,
-        type: 'info'
-      });
+  const handleSuggestionClick = (
+    type: 'store' | 'category' | 'coupon',
+    item: Store | Category | Coupon
+  ) => {
+    setShowSuggestions(false);
+    if (type === 'store') {
+      const store = item as Store;
+      router.push(`/stores/${store.slug || store.id}`);
+    } else if (type === 'category') {
+      const category = item as Category;
+      router.push(categoryPath(category));
+    } else {
+      handleGetCode(item as Coupon);
     }
-  };
-
-  const clearFilters = () => {
-    setSelectedCategory('');
-    setSelectedStore('');
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-cream">
       <Navbar />
+      <Breadcrumbs items={[{ label: 'Promotions' }]} />
 
-      {/* Breadcrumbs */}
-      <Breadcrumbs
-        items={[
-          { label: 'Coupons' }
-        ]}
-      />
+      {/* Hero */}
+      <section className="relative border-b border-tan overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.35] pointer-events-none"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(199,57,95,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(199,57,95,0.08) 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+          }}
+        />
+        <div className="home-container relative py-12 sm:py-16 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-accent mb-3">
+            Verified Promotions
+          </p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold uppercase tracking-tight text-brand-navy leading-[1.1] max-w-3xl mx-auto">
+            Discover the Best Affiliate{' '}
+            <span className="text-brand-accent">Coupons</span>
+          </h1>
+          <p className="mt-4 text-sm sm:text-base text-brand-muted max-w-xl mx-auto">
+            Hand-picked promo codes and deals from trusted brands — verified daily so you save more on every purchase.
+          </p>
 
-      <div className="w-full px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4">
-              All <span className="text-[#B8860B]">Coupons</span>
-            </h1>
-            <p className="text-center text-gray-600 text-sm sm:text-base">
-              Discover amazing deals and discounts from your favorite stores
-            </p>
+          <div ref={searchWrapRef} className="mt-8 max-w-xl mx-auto relative text-left">
+            <form onSubmit={handleHeroSearch} className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted pointer-events-none" />
+                <input
+                  type="search"
+                  value={heroQuery}
+                  onChange={(e) => setHeroQuery(e.target.value)}
+                  onFocus={() => {
+                    if (heroQuery.trim()) setShowSuggestions(true);
+                  }}
+                  placeholder="Search stores, brands, or deals…"
+                  autoComplete="off"
+                  className="w-full pl-10 pr-10 py-3.5 rounded-lg border border-tan bg-white text-sm font-semibold uppercase tracking-wide text-brand-navy placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-brand-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-navy/20"
+                />
+                {heroQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeroQuery('');
+                      setShowSuggestions(false);
+                      setSuggestResults({ stores: [], categories: [], coupons: [] });
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-brand-navy/60 hover:text-brand-navy"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="px-8 py-3.5 rounded-lg bg-brand-navy text-white text-xs font-extrabold uppercase tracking-wider hover:bg-brand-navy-dark transition-colors"
+              >
+                Search
+              </button>
+            </form>
+
+            {showSuggestions && heroQuery.trim() && (
+              <div className="absolute left-0 right-0 top-full z-30 mt-2 max-h-[min(22rem,60vh)] overflow-y-auto rounded-xl border border-tan bg-white shadow-2xl text-left">
+                {suggestLoading && !hasSuggestResults ? (
+                  <div className="flex items-center justify-center gap-2 p-4 text-sm text-brand-muted">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Searching…
+                  </div>
+                ) : !hasSuggestResults ? (
+                  <div className="p-4 text-center text-sm text-brand-muted">
+                    No matches for &ldquo;{heroQuery.trim()}&rdquo;
+                  </div>
+                ) : (
+                  <>
+                    {suggestResults.stores.length > 0 && (
+                      <div className="p-2">
+                        <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-brand-muted">
+                          Stores
+                        </div>
+                        {suggestResults.stores.map((store) => (
+                          <button
+                            key={store.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleSuggestionClick('store', store)}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-cream transition-colors"
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-tan bg-white">
+                              {getFaviconUrl(store) ? (
+                                <img
+                                  src={getFaviconUrl(store)!}
+                                  alt=""
+                                  className="h-7 w-7 object-contain"
+                                />
+                              ) : (
+                                <span className="text-xs font-bold text-brand-navy">
+                                  {store.name.charAt(0)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold text-brand-navy">
+                                {store.name}
+                              </div>
+                              <div className="text-[11px] text-brand-muted">Store</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {suggestResults.coupons.length > 0 && (
+                      <div
+                        className={`p-2 ${suggestResults.stores.length > 0 ? 'border-t border-tan' : ''}`}
+                      >
+                        <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-brand-muted">
+                          Coupons
+                        </div>
+                        {suggestResults.coupons.map((coupon) => (
+                          <button
+                            key={coupon.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleSuggestionClick('coupon', coupon)}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-cream transition-colors"
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-tan bg-cream">
+                              {coupon.logoUrl ? (
+                                <img src={coupon.logoUrl} alt="" className="h-7 w-7 object-contain" />
+                              ) : (
+                                <Tag className="h-4 w-4 text-brand-navy" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold text-brand-navy">
+                                {getCouponDisplayTitle(coupon)}
+                              </div>
+                              <div className="truncate text-[11px] text-brand-muted">
+                                {coupon.storeName || 'Deal'}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {suggestResults.categories.length > 0 && (
+                      <div
+                        className={`p-2 ${
+                          suggestResults.stores.length > 0 || suggestResults.coupons.length > 0
+                            ? 'border-t border-tan'
+                            : ''
+                        }`}
+                      >
+                        <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-brand-muted">
+                          Categories
+                        </div>
+                        {suggestResults.categories.map((category) => (
+                          <button
+                            key={category.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleSuggestionClick('category', category)}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-cream transition-colors"
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-navy text-sm">
+                              {getCategoryEmoji(category.name)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold text-brand-navy">
+                                {category.name}
+                              </div>
+                              <div className="text-[11px] text-brand-muted">Category</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setShowSuggestions(false);
+                        router.push(`/search?q=${encodeURIComponent(heroQuery.trim())}`);
+                      }}
+                      className="w-full border-t border-tan px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-brand-navy hover:bg-cream"
+                    >
+                      View all results for &ldquo;{heroQuery.trim()}&rdquo;
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* 3-Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <Link
+            href="/stores"
+            className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-brand-navy hover:text-brand-accent transition-colors"
+          >
+            Or browse all stores <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
 
-            {/* LEFT SIDEBAR */}
-            <div className="lg:col-span-3 space-y-6">
-              {/* Categories Filter */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#B8860B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                  Categories
-                </h3>
-                <div className="space-y-2 max-h-80 overflow-y-auto">
-                  <button
-                    onClick={() => setSelectedCategory('')}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${selectedCategory === '' ? 'bg-[#FFFBF0] text-[#B8860B] font-semibold' : 'hover:bg-gray-50 text-gray-700'
-                      }`}
+      {/* Popular Coupons */}
+      <section className="home-container py-10 sm:py-12">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <h2 className="text-lg sm:text-xl font-extrabold uppercase tracking-tight text-brand-navy">
+            Popular Coupons
+          </h2>
+          <a
+            href="#all-deals"
+            className="text-xs font-bold uppercase tracking-wide text-brand-navy hover:text-brand-accent inline-flex items-center gap-1"
+          >
+            View All <ArrowRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-40 bg-white border border-tan rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : popularCoupons.length === 0 ? (
+          <p className="text-sm text-brand-muted text-center py-8">No coupons available yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {popularCoupons.map((coupon) => (
+              <CouponPromoCard key={coupon.id} coupon={coupon} onGetCode={handleGetCode} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Top Stores */}
+      <section className="border-t border-tan bg-white/50">
+        <div className="home-container py-10 sm:py-12">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <h2 className="text-lg sm:text-xl font-extrabold uppercase tracking-tight text-brand-navy">
+              Top Stores
+            </h2>
+            <Link
+              href="/stores"
+              className="text-xs font-bold uppercase tracking-wide text-brand-navy hover:text-brand-accent inline-flex items-center gap-1"
+            >
+              View All <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="h-14 bg-cream border border-tan rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              {topStores.map((store) => {
+                const logo = getFaviconUrl(store);
+                const count = storeDealCounts.get(store.id || '') || 0;
+                return (
+                  <Link
+                    key={store.id}
+                    href={storeHref(store)}
+                    className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-tan bg-white hover:border-brand-navy/30 transition-colors min-w-0"
                   >
-                    All Categories ({coupons.length})
-                  </button>
-                  {categories.map((category) => {
-                    const count = coupons.filter(c => c.categoryId === category.id).length;
-                    return (
-                      <button
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category.id || '')}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${selectedCategory === category.id ? 'bg-[#FFFBF0] text-[#B8860B] font-semibold' : 'hover:bg-gray-50 text-gray-700'
-                          }`}
-                      >
-                        <span className="truncate">{category.name}</span>
-                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{count}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                    <div className="w-8 h-8 rounded border border-tan bg-cream flex items-center justify-center overflow-hidden shrink-0">
+                      {logo ? (
+                        <img src={logo} alt="" className="max-h-6 max-w-6 object-contain" />
+                      ) : (
+                        <span className="text-[10px] font-bold text-brand-navy">{store.name.charAt(0)}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-brand-navy truncate">{store.name}</p>
+                      <span className="inline-block mt-0.5 text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded">
+                        {count} coupon{count !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
 
-              {/* Popular Stores */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#B8860B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  Popular Stores
-                </h3>
-                <div className="space-y-2 max-h-80 overflow-y-auto">
-                  {stores.slice(0, 10).map((store) => {
-                    const logoUrl = getFaviconUrl(store);
-                    return (
-                      <Link
-                        key={store.id}
-                        href={store.slug ? `/stores/${store.slug}` : `/stores/${store.id}`}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
-                      >
-                        {logoUrl ? (
-                          <img
-                            src={logoUrl}
-                            alt={store.name}
-                            className="w-10 h-10 rounded-lg object-contain bg-gray-50"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FFD23F] to-[#FFE566] flex items-center justify-center text-black font-bold">${store.name.charAt(0)}</div>`;
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FFD23F] to-[#FFE566] flex items-center justify-center text-black font-bold">
-                            {store.name.charAt(0)}
-                          </div>
-                        )}
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-[#E6BC2E] truncate">{store.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
+      {/* Trending Categories */}
+      <section className="home-container py-10 sm:py-12">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <h2 className="text-lg sm:text-xl font-extrabold uppercase tracking-tight text-brand-navy">
+            Trending Categories
+          </h2>
+          <Link
+            href="/categories"
+            className="text-xs font-bold uppercase tracking-wide text-brand-navy hover:text-brand-accent inline-flex items-center gap-1"
+          >
+            View All <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
 
-              {/* Filter Stats */}
-              {(selectedCategory || selectedStore) && (
-                <div className="bg-[#FFFBF0] rounded-lg border border-[#FFD23F]/40 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-[#B8860B]">Active Filters</span>
-                    <button
-                      onClick={clearFilters}
-                      className="text-xs text-[#B8860B] hover:text-[#E6BC2E] font-semibold"
-                    >
-                      Clear All
-                    </button>
-                  </div>
-                  <div className="text-xs text-[#B8860B]">
-                    Showing {filteredCoupons.length} of {coupons.length} coupons
-                  </div>
-                </div>
-              )}
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="h-16 bg-white border border-tan rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {trendingCategories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={categoryPath(cat)}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-lg border border-tan bg-white hover:border-brand-navy/30 transition-colors"
+              >
+                <span className="w-9 h-9 rounded-md bg-brand-navy text-white flex items-center justify-center text-sm shrink-0">
+                  {getCategoryEmoji(cat.name)}
+                </span>
+                <span className="text-sm font-bold text-brand-navy line-clamp-1">{cat.name}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Info bar */}
+      <section className="border-y border-tan bg-white/70">
+        <div className="home-container py-8 sm:py-10 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
+          <div>
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-brand-navy mb-2">
+              What Are Coupon Codes?
+            </h3>
+            <p className="text-sm text-brand-muted leading-relaxed">
+              Promo codes you enter at checkout to unlock discounts, free shipping, or exclusive offers from your favourite brands.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-brand-navy mb-2">
+              How To Find Codes
+            </h3>
+            <p className="text-sm text-brand-muted leading-relaxed">
+              Browse popular coupons above, search a brand, or open any store page to see verified active offers ready to use.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-brand-navy mb-2">
+              Do They Always Work?
+            </h3>
+            <p className="text-sm text-brand-muted leading-relaxed">
+              We verify codes regularly, but retailer terms can change. If a code fails, try another offer from the same store.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* All Coupons & Deals — store directory */}
+      <section id="all-deals" className="home-container py-10 sm:py-14">
+        <div className="mb-6">
+          <h2 className="text-lg sm:text-xl font-extrabold uppercase tracking-tight text-brand-navy">
+            All Coupons &amp; Deals
+          </h2>
+          <p className="text-sm text-brand-muted mt-1">
+            {loading
+              ? 'Loading…'
+              : `Showing ${visibleStores.length} of ${directoryStores.length} stores`}
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="aspect-square bg-white border border-tan rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : directoryStores.length === 0 ? (
+          <div className="text-center py-12 border border-tan rounded-xl bg-white">
+            <Tag className="w-10 h-10 text-brand-muted mx-auto mb-3 opacity-50" />
+            <p className="font-bold text-brand-navy">No stores match your search</p>
+            <button
+              type="button"
+              onClick={() => {
+                setDirectoryQuery('');
+                setHeroQuery('');
+              }}
+              className="mt-4 text-sm font-semibold text-brand-accent hover:underline"
+            >
+              Clear search
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+              {visibleStores.map((store) => {
+                const logo = getFaviconUrl(store);
+                return (
+                  <Link
+                    key={store.id}
+                    href={storeHref(store)}
+                    className="group flex flex-col"
+                  >
+                    <div className="aspect-square rounded-lg border border-tan bg-white flex items-center justify-center p-4 group-hover:border-brand-navy/30 group-hover:shadow-sm transition-all">
+                      {logo ? (
+                        <img
+                          src={logo}
+                          alt={store.name}
+                          className="max-h-[55%] max-w-[70%] object-contain"
+                        />
+                      ) : (
+                        <span className="text-2xl font-bold text-brand-navy">{store.name.charAt(0)}</span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs font-bold text-brand-navy line-clamp-1">{store.name}</p>
+                    <span className="text-[11px] font-semibold text-brand-muted group-hover:text-brand-accent inline-flex items-center gap-0.5">
+                      View Coupons <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
 
-            {/* MAIN CONTENT */}
-            <div className="lg:col-span-6">
-              {/* Store Filter */}
-              <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6 shadow-sm">
-                <label htmlFor="store" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Filter by Store
-                </label>
-                <select
-                  id="store"
-                  value={selectedStore}
-                  onChange={(e) => setSelectedStore(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFD23F]"
+            {hasMore && (
+              <div className="mt-10 text-center">
+                <button
+                  type="button"
+                  onClick={() => setStorePage((p) => p + 1)}
+                  className="inline-flex items-center px-8 py-3 rounded-lg border-2 border-brand-navy text-brand-navy text-xs font-extrabold uppercase tracking-wider hover:bg-brand-navy hover:text-white transition-colors"
                 >
-                  <option value="">All Stores</option>
-                  {stores.map((store) => (
-                    <option key={store.id} value={store.id}>
-                      {store.name}
-                    </option>
-                  ))}
-                </select>
+                  Load More Stores
+                </button>
               </div>
+            )}
+          </>
+        )}
+      </section>
 
-              {/* Coupons List */}
-              {loading ? (
-                <div className="space-y-4">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 h-24 animate-pulse">
-                      <div className="flex gap-4">
-                        <div className="h-16 w-16 bg-gray-200 rounded"></div>
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : filteredCoupons.length === 0 ? (
-                <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-gray-500 text-lg mb-4">No coupons found.</p>
-                  {(selectedCategory || selectedStore) && (
-                    <button
-                      onClick={clearFilters}
-                      className="text-[#B8860B] hover:text-[#E6BC2E] font-semibold"
-                    >
-                      Clear filters to see all coupons
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredCoupons.map((coupon) => {
-                    const isRevealed = coupon.id && revealedCoupons.has(coupon.id);
-                    const isExpired = coupon.expiryDate && new Date(coupon.expiryDate) < new Date();
-
-                    return (
-                      <div
-                        key={coupon.id}
-                        className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 hover:border-[#E6BC2E] flex items-center gap-4"
-                      >
-                        {/* Logo */}
-                        <div className="flex-shrink-0">
-                          {(() => {
-                            // Find the store for this coupon
-                            const store = stores.find(s =>
-                              (coupon.storeIds && s.id && coupon.storeIds.includes(s.id)) ||
-                              s.name === coupon.storeName
-                            );
-                            const logoUrl = store ? getFaviconUrl(store) : coupon.logoUrl;
-                            const fallbackInitial = store?.name?.charAt(0) || coupon.storeName?.charAt(0) || coupon.code?.charAt(0) || '?';
-
-                            return logoUrl ? (
-                              <div className="w-16 h-16 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
-                                <img
-                                  src={logoUrl}
-                                  alt={coupon.storeName || coupon.code}
-                                  className="w-full h-full object-contain"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    const parent = target.parentElement;
-                                    if (parent) {
-                                      parent.innerHTML = `<div class="w-16 h-16 rounded-lg bg-gradient-to-br from-[#FFD23F] to-[#FFE566] flex items-center justify-center"><span class="text-xl font-bold text-black">${fallbackInitial.toUpperCase()}</span></div>`;
-                                    }
-                                  }}
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-[#FFD23F] to-[#FFE566] flex items-center justify-center">
-                                <span className="text-xl font-bold text-black">
-                                  {fallbackInitial.toUpperCase()}
-                                </span>
-                              </div>
-                            );
-                          })()}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-bold text-gray-900 mb-1 truncate">
-                            {coupon.storeName || coupon.code}
-                          </h3>
-                          <div className="flex items-center gap-3 text-xs text-gray-500">
-                            <div className="flex items-center gap-1 text-[#B8860B]">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span>Verified</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <span>{formatDate(coupon.expiryDate) || '31 Dec, 2025'}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Button */}
-                        <div className="flex-shrink-0">
-                          {isExpired ? (
-                            <div className="bg-red-100 text-red-700 text-xs font-semibold px-4 py-2 rounded">
-                              Expired
-                            </div>
-                          ) : (
-                            <button
-                              onClick={(e) => handleGetDeal(coupon, e)}
-                              className="group relative bg-gradient-to-r from-[#FFD23F] to-[#FFE566] border-2 border-dashed border-black/20 rounded-lg px-6 py-3 text-black font-semibold hover:from-black hover:to-black hover:text-white transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap"
-                            >
-                              {isRevealed && coupon.couponType === 'code' && coupon.code ? (
-                                <span className="font-bold">{coupon.code}</span>
-                              ) : (
-                                <>
-                                  <span className="group-hover:hidden">Get Code</span>
-                                  <span className="hidden group-hover:inline font-bold">
-                                    {coupon.couponType === 'code' && coupon.code
-                                      ? `Get Code ${coupon.code.slice(-2)}`
-                                      : 'Get Code'}
-                                  </span>
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+      {/* Newsletter */}
+      <section className="bg-brand-navy">
+        <div className="home-container py-10 sm:py-12">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="max-w-md">
+              <p className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-cyan mb-2">
+                <Sparkles className="w-3.5 h-3.5" />
+                Newsletter
+              </p>
+              <h2 className="text-xl sm:text-2xl font-extrabold uppercase tracking-tight text-white leading-tight">
+                Get Verified Codes in Your Inbox
+              </h2>
+              <p className="mt-2 text-sm text-white/70">
+                Weekly hand-picked promotions from brands you actually shop.
+              </p>
             </div>
-
-            {/* RIGHT SIDEBAR */}
-            <div className="lg:col-span-3 space-y-6">
-              {/* Trending Deals */}
-              <div className="bg-[#FFFBF0] rounded-lg border border-[#FFD23F]/40 p-5 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#B8860B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                  Trending Deals
-                </h3>
-                <div className="space-y-3">
-                  {filteredCoupons.slice(0, 5).map((coupon) => (
-                    <div key={coupon.id} className="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center gap-2 mb-2">
-                        {coupon.logoUrl && (
-                          <img src={coupon.logoUrl} alt="" className="w-8 h-8 rounded object-contain" />
-                        )}
-                        <span className="text-sm font-semibold text-gray-900 truncate">{coupon.storeName}</span>
-                      </div>
-                      <div className="text-xs text-gray-600 mb-2 line-clamp-2">{coupon.description}</div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#B8860B]">{coupon.discount}% OFF</span>
-                        <button
-                          onClick={(e) => handleGetDeal(coupon, e)}
-                          className="text-xs bg-[#FFD23F] text-black px-3 py-1 rounded hover:bg-black hover:text-white transition-colors"
-                        >
-                          Get Deal
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <div className="w-full md:w-auto md:min-w-[340px]">
+              <form
+                className="flex flex-col sm:flex-row gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!email.trim()) return;
+                  setSubscribed(true);
+                  setEmail('');
+                }}
+              >
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="flex-1 px-4 py-3 rounded-lg text-sm bg-white text-brand-navy placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand-cyan/50"
+                />
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider bg-white text-brand-navy hover:bg-brand-cyan transition-colors"
+                >
+                  Subscribe
+                </button>
+              </form>
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold uppercase tracking-wider text-white/50">
+                <span>No Spam</span>
+                <span>Just Savings</span>
+                <span>Unsubscribe Anytime</span>
               </div>
-
-              {/* Related Stores */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#B8860B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  You May Also Like
-                </h3>
-                <div className="space-y-3">
-                  {stores.slice(0, 6).map((store) => {
-                    const logoUrl = getFaviconUrl(store);
-                    return (
-                      <Link
-                        key={store.id}
-                        href={store.slug ? `/stores/${store.slug}` : `/stores/${store.id}`}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
-                      >
-                        {logoUrl ? (
-                          <img
-                            src={logoUrl}
-                            alt={store.name}
-                            className="w-12 h-12 rounded-lg object-contain bg-gray-50"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">${store.name.charAt(0)}</div>`;
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
-                            {store.name.charAt(0)}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 group-hover:text-[#E6BC2E] truncate">{store.name}</div>
-                          <div className="text-xs text-gray-500">View Coupons →</div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-200 p-5 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Stats</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Total Coupons</span>
-                    <span className="text-lg font-bold text-blue-600">{coupons.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Active Stores</span>
-                    <span className="text-lg font-bold text-purple-600">{stores.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Categories</span>
-                    <span className="text-lg font-bold text-pink-600">{categories.length}</span>
-                  </div>
-                </div>
-              </div>
+              {subscribed && (
+                <p className="mt-2 text-sm text-brand-cyan font-semibold flex items-center gap-1">
+                  <BadgeCheck className="w-4 h-4" /> You&apos;re on the list.
+                </p>
+              )}
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Newsletter Subscription */}
-      <Newsletter />
-
-      {/* Footer */}
-      <Footer />
-
-      {/* Coupon Popup */}
       <CouponPopup
         coupon={selectedCoupon}
         isOpen={showPopup}
-        onClose={handlePopupClose}
-        onContinue={handlePopupContinue}
+        onClose={() => {
+          setShowPopup(false);
+          setSelectedCoupon(null);
+        }}
+        onContinue={() => {
+          if (selectedCoupon?.url) {
+            window.open(selectedCoupon.url, '_blank', 'noopener,noreferrer');
+          }
+          setShowPopup(false);
+          setSelectedCoupon(null);
+        }}
       />
     </div>
   );
@@ -663,20 +821,20 @@ function CouponsContent() {
 
 export default function CouponsPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFD23F] mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading coupons...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-cream">
+          <Navbar />
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-navy mx-auto mb-4" />
+              <p className="text-brand-muted">Loading promotions…</p>
+            </div>
           </div>
         </div>
-        <Footer />
-      </div>
-    }>
+      }
+    >
       <CouponsContent />
     </Suspense>
   );
 }
-

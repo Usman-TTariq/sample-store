@@ -74,6 +74,15 @@ const nextConfig: NextConfig = {
     // Skip TypeScript errors during production build
     ignoreBuildErrors: true,
   },
+  async redirects() {
+    return [
+      {
+        source: '/coupons',
+        destination: '/promotions',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

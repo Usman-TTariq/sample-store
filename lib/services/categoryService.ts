@@ -1,12 +1,28 @@
 import { createClient } from '@/lib/supabase/client'
+import { isCategoryUuid, slugifyCategoryName } from '@/lib/utils/categorySlug'
 
 export interface Category {
   id?: string
   name: string
+  slug?: string
   logoUrl?: string
   backgroundColor: string
   createdAt?: string
   updatedAt?: string
+}
+
+function mapCategory(item: Record<string, unknown>): Category {
+  const name = String(item.name || '')
+  const dbSlug = typeof item.slug === 'string' ? item.slug.trim() : ''
+  return {
+    id: item.id as string | undefined,
+    name,
+    slug: dbSlug || slugifyCategoryName(name),
+    logoUrl: (item.icon_url as string) || undefined,
+    backgroundColor: (item.background_color as string) || '#000000',
+    createdAt: item.created_at as string | undefined,
+    updatedAt: item.updated_at as string | undefined,
+  }
 }
 
 const supabase = createClient()
@@ -181,14 +197,7 @@ export async function getCategories(): Promise<Category[]> {
       return []
     }
 
-    return (data || []).map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      logoUrl: item.icon_url,
-      backgroundColor: item.background_color || '#000000',
-      createdAt: item.created_at,
-      updatedAt: item.updated_at,
-    }))
+    return (data || []).map((item: Record<string, unknown>) => mapCategory(item))
   } catch (error) {
     console.error('Error getting categories:', error)
     return []
@@ -208,18 +217,42 @@ export async function getCategoryById(id: string): Promise<Category | null> {
       return null
     }
 
-    return {
-      id: data.id,
-      name: data.name,
-      logoUrl: data.icon_url,
-      backgroundColor: data.background_color || '#000000',
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    }
+    return mapCategory(data as Record<string, unknown>)
   } catch (error) {
     console.error('Error getting category:', error)
     return null
   }
+}
+
+/** Resolve category by UUID id or by name slug (e.g. "fashion"). */
+export async function getCategoryBySlugOrId(idOrSlug: string): Promise<Category | null> {
+  const key = idOrSlug.trim()
+  if (!key) return null
+
+  if (isCategoryUuid(key)) {
+    return getCategoryById(key)
+  }
+
+  const normalized = key.toLowerCase()
+
+  try {
+    const { data: bySlug } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('slug', normalized)
+      .maybeSingle()
+
+    if (bySlug) return mapCategory(bySlug as Record<string, unknown>)
+  } catch {
+    // slug column may not exist — fall through to name match
+  }
+
+  const categories = await getCategories()
+  return (
+    categories.find((c) => c.slug === normalized) ||
+    categories.find((c) => slugifyCategoryName(c.name) === normalized) ||
+    null
+  )
 }
 
 export async function updateCategory(
